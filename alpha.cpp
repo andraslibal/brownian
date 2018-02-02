@@ -62,7 +62,8 @@ int generateCoordinates() {
                 if (diffX < -Sy_2) diffX += Sy;
 
                 double diffSquare = diffX * diffX + diffY * diffY;
-                if (diffSquare < 0.2 * 0.2) 
+                if (diffSquare < 0.2 * 0.2) // the distance between two particles has to 
+                                            // be bigger then 0.2
                     break;
             }
         // if a managed to iterate over the whole bunch of particles which have their 
@@ -76,17 +77,22 @@ int generateCoordinates() {
         x[i] = tmpX;
         y[i] = tmpY;
 
-        if (Rand() > 0.5) color[i] = 2;
-        else color[i] = 1;
+        // setting color and charge to particle
+        if (Rand() > 0.5) {
+            color[i] = 1;
+            q[i] = 1;
+        }
+        else {
+            color[i] = 0;
+            q[i] = -1;
+        }
 
+        // setting the initial forces
+        fx[i] = 0;
+        fy[i] = 0;
     }
 }
 
 int main() {
-    int i = 1, j;
-    do {
-        for (j = 0; j < i; j++) cout << "FOR j: " << j << endl;
-        cout << "j: " << j << endl;
-    } while (j != i);
     return 0;
 }
