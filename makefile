@@ -1,5 +1,5 @@
 alpha:
-	g++ alpha.cpp -o alpha
+	g++ alpha.cpp -o alpha.out
 
 clean:
 	rm alpha
