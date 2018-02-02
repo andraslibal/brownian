@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdlib>
+#include "random_numrec.c"
 
 using namespace std;
 
@@ -31,12 +33,26 @@ int initParticles() {
 
     Sx = 20.0;
     Sy = 20.0;
+}
 
-    for(int i = 0; i < N; i++) {
+int generateCoordinates() {
+    for (int i = 0; i < N; i++) {
+        ID[i] = i;
+        // choose a random position in the system for the particle
+        double tmpX = Sx * Rand();
+        double tmpY = Sy * Rand();
+        // checking if in this position there already is an element
+        for (int j = 0; j < i; j++) {
+            double diffX = x[j] - tmpX;
+            double diffY = y[j] - tmpY;
+
+            
+        }
 
     }
 }
 
 int main() {
-    cout << "Helloka" << endl;
+    
+    return 0;
 }
