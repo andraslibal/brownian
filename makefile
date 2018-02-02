@@ -1,6 +1,6 @@
 alpha:
 	g++ alpha.cpp -o alpha.out
-	./alpha.out
+	./alpha.out test.txt
 
 clean:
-	rm alpha
+	rm alpha.out test.txt
