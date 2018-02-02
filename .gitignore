@@ -1,5 +1,3 @@
 *.out
-*
-!*.cpp
-!makefile
-!.gitignore
+.vscode
+*.json
