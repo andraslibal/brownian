@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rebeka/Egyetem/Allamvizsga/brownian/main.c
+stdio.h
+-
+stdlib.h
+-
+time.h
+-
+math.h
+-
+particle.h
+/home/rebeka/Egyetem/Allamvizsga/brownian/particle.h
+
+/home/rebeka/Egyetem/Allamvizsga/brownian/particle.h
+stdio.h
+-
+
