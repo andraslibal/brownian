@@ -1,8 +1,9 @@
 #include <stdio.h>
 
-struct Coordinate{
-    double x,y;
+struct Coordinate {
+    double x, y;
 };
+
 typedef struct Coordinate Coordinate;
 
 struct Particle {

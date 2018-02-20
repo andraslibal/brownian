@@ -11,9 +11,38 @@ double dt;              //length of a single time step
 Particle *particles;    //list of particle
 int t;                  //time
 
-//time measuring
+//time measuring, how much the simulation ran
 time_t time_begin;
 time_t time_end;
+
+//statistic file, file with coordinates of the  particles
+FILE *statistics_file;
+FILE *moviefile;
+
+void keepParticleInSystem(double *dx, double *dy) {
+    if (*dx >= sX2) *dx -= sX;
+    if (*dx < -sX2) *dx += sX;
+    if (*dy >= sY2) *dy -= sY;
+    if (*dy < -sY2) *dy += sY;
+}
+
+void stowParticle(Coordinate *right_coord, int i) {
+    Coordinate tmp;
+    double dx, dy;
+    int overlap = 0;
+    do {
+        tmp.x = sX * rand() / (RAND_MAX + 1.0);
+        tmp.y = sY * rand() / (RAND_MAX + 1.0);
+        for (int j = 0; j < i; j++) {
+            dx = tmp.x - particles[j].coord.x;
+            dy = tmp.y - particles[j].coord.y;
+            keepParticleInSystem(&dx, &dy); //back to the "box"
+            overlap = (sqrt(dx * dx + dy * dy) < 0.2); //checking if the position is already taken
+        }
+    } while (overlap == 1); //regenerate until, the  coordinate is unused
+
+    *right_coord = tmp;
+}
 
 void initParticles(int nrParticles, double systemSize, double timeStep) {
     N = nrParticles;
@@ -25,83 +54,165 @@ void initParticles(int nrParticles, double systemSize, double timeStep) {
         perror("Allocation problem!");
         exit(EXIT_FAILURE);
     }
-    int i = 0, overlap;
-    double dx, dy, tmpX, tmpY;
+    int i = 0;
+    Coordinate position;
 
     while (i < N) {
         //printf("kor: %d\n", i);
         particles[i].id = i;
-        do {
-            tmpX = sX * rand() / (RAND_MAX + 1.0);
-            tmpY = sY * rand() / (RAND_MAX + 1.0);
-            for (int j = 0; j < i; j++) {
-                dx = tmpX - particles[j].coord.x;
-                dy = tmpY - particles[j].coord.y;
-                //PBC fold back
-                if (dx >= sX2) dx -= sX;
-                if (dx < -sX2) dx += sX;
-                if (dy >= sY2) dy -= sY;
-                if (dy < -sY2) dy += sY;
-                overlap = (sqrt(dx * dx + dy * dy) < 0.2); //checking if already taken
-            }
-        } while (overlap == 1); //regenerate until, the  coordinate is unused
-
         particles[i].color = ((rand() / (RAND_MAX + 1.0)) > 0.5); //color
-        particles[i].coord.x = tmpX;
-        particles[i].coord.y = tmpY;
-        //particles[i].x = tmpX; //particle coordinate
-        //particles[i].y = tmpY;
-        i++;
+        stowParticle(&position, i);  //particle coordinate
+        particles[i].coord.x = position.x;
+        particles[i].coord.y = position.y;
+        i++; //miert csak a kovetkezonek kell allitani az erot?
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
     }
 }
 
-void start(){
-    printf("Let's do it!");
-    srand(time(NULL));
-    time(&time_begin);
-    printf("Program started: %s\n",asctime(localtime(&time_begin)));
+void calculateExternalForces() {
+    int i;
+    for (i = 0; i < N; i++) {
+        if (particles[i].color) {
+            particles[i].fx -= 0.5;
+        } else {
+            particles[i].fx += 0.5;
+        }
+    }
 }
 
-void end(){
+void calculatePairwiseForces() {
+    int i, j;
+    double dx, dy,dr,dr2;
+    double f, fx, fy;
+    double a = 0.2;
+
+    for (i = 0; i < N - 1; i++) {
+        for (j = i + 1; j < N; j++) {
+            dx = particles[i].coord.x - particles[j].coord.x;
+            dy = particles[i].coord.y - particles[j].coord.y;
+            keepParticleInSystem(&dx, &dy);
+            dr2 = dx * dx + dy * dy;
+            dr = sqrt(dr2);
+            //printf("dr %f\n",dr);
+
+            if (dr < a) {  //ezt nezd meg, what kind of magic?
+                f = 100.0;
+                printf("Warning!!!dr %f\n",dr);
+                printf("biztos itt vagyok ");
+            }
+            else {
+                //printf("else ag %f\n",dr);
+                f = 1 / dr2 * exp(-0.25 * dr);
+            }
+           // f=10;
+            //f = ((double)dr > (double)0.2) ? (100.0, printf("Warning!!!dr%f\n",dr)): (1 / dr2 * exp(-0.25 * dr)/*, printf("hulyeseg %f\n",dr)*/);
+
+            //printf("f %f\n",f);
+            //project it to the axes get the fx, fy components
+            fx = f * dx / dr;
+            fy = f * dy / dr;
+
+            particles[i].fx += fx;
+            particles[i].fy += fy;
+
+            particles[j].fx -= fx;
+            particles[j].fy -= fy;
+
+        }
+    }
+}
+
+void moveParticles() {
+    double dx, dy;
+    for (int i = 0; i < N; i++) {
+        dx = particles[i].fx * dt;
+        dy = particles[i].fy * dt;
+        particles[i].coord.x += dx;
+        particles[i].coord.y += dy;
+        if (particles[i].coord.x < 0) particles[i].coord.x += sX;
+        if (particles[i].coord.y < 0) particles[i].coord.y += sY;
+        if (particles[i].coord.x > sX) particles[i].coord.x -= sX;
+        if (particles[i].coord.y > sY) particles[i].coord.y -= sY;
+        particles[i].fx = 0.0;
+        particles[i].fy = 0.0;
+    }
+}
+
+//this is for plot
+void write_cmovie() {
+    int i;
+    float floatholder;
+    int intholder;
+
+    intholder = N;
+    fwrite(&intholder, sizeof(int), 1, moviefile);
+
+    intholder = t;
+    fwrite(&intholder, sizeof(int), 1, moviefile);
+
+    for (i = 0; i < N; i++) {
+        intholder = particles[i].color + 2; //miert kell +2
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        intholder = particles[i].id;//ID
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        floatholder = (float) particles[i].coord.x;
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = (float) particles[i].coord.y;
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = 1.0;//cum_disp, cmovie format
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+    }
+
+}
+
+void write_statistics() {
+    double avg_vx = 0.0;
+    for (int i = 0; i < N; i++) {
+        avg_vx += particles[i].fx;
+    }
+
+    avg_vx = avg_vx / (double) N;
+
+    fprintf(statistics_file, "%d %f\n", t, avg_vx);
+
+}
+
+void start() {
+    printf("\tLet's do it!\n");
+    srand(time(NULL));
+    time(&time_begin);
+}
+
+void end() {
     time(&time_end);
-    printf("Program started: %s\n",asctime(localtime(&time_begin)));
-    printf("Program ended: %s\n",asctime(localtime(&time_end)));
-    printf("Program ran: %lf seconds\n",difftime(time_end,time_begin));
+    printf("Program started: %s\n", asctime(localtime(&time_begin)));
+    printf("Program ended: %s\n", asctime(localtime(&time_end)));
+    printf("Program ran: %f seconds\n", difftime(time_end, time_begin));
 }
 
 int main() {
     start();
-    Particle *particle = (Particle *) malloc(sizeof(Particle));
-    (*particle).color = 4;
-    (*particle).coord.x = 4;
-    (*particle).coord.y = 2*4;
-    particle->fx = 3;
-    printf("%.2f\n", sqrt(particle->fx));
-    printf("%.2f\n", particle->coord.x);
-    printf("%.2f\n", particle->coord.y);
-
-    initParticles(20, 20.0, 0.002);
-    printf("N=%d sX= %.2f Sy=%.2f sX= %.2f Sy=%.2f  dt=%.4f\n", N, sX, sY, sX2, sY2, dt);
-    particles[2].fx = 4;
-    printf("tttttt%.2f\n", particles[2].fx);
-
-//    int i = 0;
-//    for (i = 0; i < 2; i++) {
-//        printf("Generalt szam %d\n", rand() % 20);
-//    }
-//    int i=0;
-//    while(i<1000000){
-//        printf("Generalt szam %d\n", i++);
-//    }
-
-    printf("Hello, World!\n");
-   // free(particles);
-    //free(particle);
-//     for(i=0; i<N;i++){
-//            free(particles[i]);
-//     }
+    printf("mero kivancsisag%.2f\n",sqrt(4));
+    initParticles(400, 20.0, 0.002);
+    moviefile = fopen("result.mvi", "w");
+    statistics_file = fopen("statistics.txt", "wt");
+    for (t = 0; t < 10; t++) {
+        calculatePairwiseForces();
+//        calculateExternalForces();
+//        write_statistics();
+//        moveParticles();
+//        if (t % 100 == 0) {
+//            write_cmovie();
+//        }
+//        if (t % 500 == 0) {
+//            printf("time = %d\n", t);
+//            fflush(stdout);
+//        }
+    }
+    fclose(statistics_file);
+    fclose(moviefile);
     end();
+    free(particles);
     return 0;
 }
