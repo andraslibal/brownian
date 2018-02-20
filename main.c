@@ -4,6 +4,9 @@
 #include <math.h>
 #include "particle.h"
 
+/*(N, number of  particles and also the box size, proportionally! if  you
+increase the box to be 2x as big in x and y direction N has to be 4x as much to have
+the same density*/
 double sX, sY;          //system size x,y direction
 double sX2, sY2;        //half of the system size
 int N;                  //number of particles
@@ -20,9 +23,9 @@ FILE *statistics_file;
 FILE *moviefile;
 
 void keepParticleInSystem(double *dx, double *dy) {
-    if (*dx >= sX2) *dx -= sX;
+    if (*dx > sX2) *dx -= sX;
     if (*dx < -sX2) *dx += sX;
-    if (*dy >= sY2) *dy -= sY;
+    if (*dy > sY2) *dy -= sY;
     if (*dy < -sY2) *dy += sY;
 }
 
@@ -58,7 +61,6 @@ void initParticles(int nrParticles, double systemSize, double timeStep) {
     Coordinate position;
 
     while (i < N) {
-        //printf("kor: %d\n", i);
         particles[i].id = i;
         particles[i].color = ((rand() / (RAND_MAX + 1.0)) > 0.5); //color
         stowParticle(&position, i);  //particle coordinate
@@ -83,9 +85,8 @@ void calculateExternalForces() {
 
 void calculatePairwiseForces() {
     int i, j;
-    double dx, dy,dr,dr2;
+    double dx, dy, dr, dr2;
     double f, fx, fy;
-    double a = 0.2;
 
     for (i = 0; i < N - 1; i++) {
         for (j = i + 1; j < N; j++) {
@@ -94,21 +95,9 @@ void calculatePairwiseForces() {
             keepParticleInSystem(&dx, &dy);
             dr2 = dx * dx + dy * dy;
             dr = sqrt(dr2);
-            //printf("dr %f\n",dr);
 
-            if (dr < a) {  //ezt nezd meg, what kind of magic?
-                f = 100.0;
-                printf("Warning!!!dr %f\n",dr);
-                printf("biztos itt vagyok ");
-            }
-            else {
-                //printf("else ag %f\n",dr);
-                f = 1 / dr2 * exp(-0.25 * dr);
-            }
-           // f=10;
-            //f = ((double)dr > (double)0.2) ? (100.0, printf("Warning!!!dr%f\n",dr)): (1 / dr2 * exp(-0.25 * dr)/*, printf("hulyeseg %f\n",dr)*/);
+            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f\n", dr)) : (f = 1 / dr2 * exp(-0.25 * dr));
 
-            //printf("f %f\n",f);
             //project it to the axes get the fx, fy components
             fx = f * dx / dr;
             fy = f * dy / dr;
@@ -130,10 +119,12 @@ void moveParticles() {
         dy = particles[i].fy * dt;
         particles[i].coord.x += dx;
         particles[i].coord.y += dy;
+        //out of box
         if (particles[i].coord.x < 0) particles[i].coord.x += sX;
         if (particles[i].coord.y < 0) particles[i].coord.y += sY;
         if (particles[i].coord.x > sX) particles[i].coord.x -= sX;
         if (particles[i].coord.y > sY) particles[i].coord.y -= sY;
+
         particles[i].fx = 0.0;
         particles[i].fy = 0.0;
     }
@@ -180,7 +171,7 @@ void write_statistics() {
 
 void start() {
     printf("\tLet's do it!\n");
-    srand(time(NULL));
+    //  srand(time(NULL));
     time(&time_begin);
 }
 
@@ -193,22 +184,21 @@ void end() {
 
 int main() {
     start();
-    printf("mero kivancsisag%.2f\n",sqrt(4));
     initParticles(400, 20.0, 0.002);
     moviefile = fopen("result.mvi", "w");
     statistics_file = fopen("statistics.txt", "wt");
-    for (t = 0; t < 10; t++) {
+    for (t = 0; t < 100000; t++) {
         calculatePairwiseForces();
-//        calculateExternalForces();
-//        write_statistics();
-//        moveParticles();
-//        if (t % 100 == 0) {
-//            write_cmovie();
-//        }
-//        if (t % 500 == 0) {
-//            printf("time = %d\n", t);
-//            fflush(stdout);
-//        }
+        calculateExternalForces();
+        write_statistics();
+        moveParticles();
+        if (t % 100 == 0) {
+            write_cmovie();
+        }
+        if (t % 500 == 0) {
+            printf("time = %d\n", t);
+            fflush(stdout);
+        }
     }
     fclose(statistics_file);
     fclose(moviefile);
