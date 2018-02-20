@@ -31,16 +31,17 @@ void keepParticleInSystem(double *dx, double *dy) {
 
 void stowParticle(Coordinate *right_coord, int i) {
     Coordinate tmp;
-    double dx, dy;
-    int overlap = 0;
+    double dx, dy,dr;
+    int overlap = 0,j;
     do {
         tmp.x = sX * rand() / (RAND_MAX + 1.0);
         tmp.y = sY * rand() / (RAND_MAX + 1.0);
-        for (int j = 0; j < i; j++) {
+        for (j = 0; j < i; j++) {
             dx = tmp.x - particles[j].coord.x;
             dy = tmp.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy); //back to the "box"
-            overlap = (sqrt(dx * dx + dy * dy) < 0.2); //checking if the position is already taken
+            dr=sqrt(dx * dx + dy * dy);
+            overlap = (dr < 0.2); //checking if the position is already taken
         }
     } while (overlap == 1); //regenerate until, the  coordinate is unused
 
@@ -184,10 +185,10 @@ void end() {
 
 int main() {
     start();
-    initParticles(400, 20.0, 0.002);
+    initParticles(200, 20.0, 0.002);
     moviefile = fopen("result.mvi", "w");
     statistics_file = fopen("statistics.txt", "wt");
-    for (t = 0; t < 100000; t++) {
+    for (t = 0; t < 10000; t++) {
         calculatePairwiseForces();
         calculateExternalForces();
         write_statistics();
