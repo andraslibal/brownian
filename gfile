@@ -1,4 +1,0 @@
-set xrange 0 20
-set yrange 0 20
-loadcolormap colors.txt
-cmovie

@@ -1,0 +1,1 @@
+/usr/bin/cc   -pthread -g   CMakeFiles/brownian.dir/main.c.o CMakeFiles/brownian.dir/thpool.c.o  -o brownian -lm 

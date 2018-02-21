@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include "thpool.h"
 #include "particle.h"
 
 /*(N, number of  particles and also the box size, proportionally! if  you
@@ -13,6 +14,9 @@ int N;                  //number of particles
 double dt;              //length of a single time step
 Particle *particles;    //list of particle
 int t;                  //time
+
+//thread
+int interval;
 
 //time measuring, how much the simulation ran
 time_t time_begin;
@@ -72,9 +76,13 @@ void initParticles(int nrParticles, double systemSize, double timeStep) {
     }
 }
 
-void calculateExternalForces() {
+void calculateExternalForces(int *multipler) {
     int i;
-    for (i = 0; i < N; i++) {
+
+    int thread_from = (*multipler * interval) - interval;
+    int thread_to = *multipler * interval;
+
+    for (i = thread_from; i < thread_to; i++) {
         if (particles[i].color) {
             particles[i].fx -= 0.5;
         } else {
@@ -83,13 +91,16 @@ void calculateExternalForces() {
     }
 }
 
-void calculatePairwiseForces() {
+void calculatePairwiseForces(int *multipler) {
     int i, j;
     double dx, dy, dr, dr2;
     double f, fx, fy;
 
-    for (i = 0; i < N - 1; i++) {
-        for (j = i + 1; j < N; j++) {
+    int thread_from = (*multipler * interval) - interval;
+    int thread_to = *multipler * interval;
+
+    for (i = thread_from; i < thread_to - 1; i++) {
+        for (j = i + 1; j < thread_to; j++) {
             dx = particles[i].coord.x - particles[j].coord.x;
             dy = particles[i].coord.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy);
@@ -185,11 +196,32 @@ void end() {
 int main() {
     start();
     initParticles(400, 20.0, 0.002);
+    const int rate = 16;
+    int inters[rate];
+
+    for (int x = 0; x < rate ; x++) {
+        inters[x] = x + 1;
+    }
+    interval = N / rate;
+
     moviefile = fopen("result.mvi", "w");
     statistics_file = fopen("statistics.txt", "wt");
+
+    threadpool thpool = thpool_init(4);
+
     for (t = 0; t < 100000; t++) {
-        calculatePairwiseForces();
-        calculateExternalForces();
+        for (int x = 0; x < rate; x++) {
+            thpool_add_work(thpool, (void *) calculatePairwiseForces, &inters[x]);
+        }
+
+        thpool_wait(thpool);
+
+        for (int x = 0; x < rate; x++) {
+            thpool_add_work(thpool, (void *) calculateExternalForces, &inters[x]);
+        }
+
+        thpool_wait(thpool);
+
         write_statistics();
         moveParticles();
         if (t % 100 == 0) {
@@ -204,5 +236,6 @@ int main() {
     fclose(moviefile);
     end();
     free(particles);
+    thpool_destroy(thpool);
     return 0;
 }
