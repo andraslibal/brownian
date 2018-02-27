@@ -15,6 +15,10 @@ time.h
 -
 math.h
 -
+string.h
+-
+regex.h
+-
 particle.h
 /home/rebeka/Egyetem/Allamvizsga/brownian/particle.h
 

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
+#include <regex.h>
 #include "particle.h"
 
 /*(N, number of  particles and also the box size, proportionally! if  you
@@ -31,8 +33,8 @@ void keepParticleInSystem(double *dx, double *dy) {
 
 void stowParticle(Coordinate *right_coord, int i) {
     Coordinate tmp;
-    double dx, dy,dr;
-    int overlap = 0,j;
+    double dx, dy, dr;
+    int overlap = 0, j;
     do {
         tmp.x = sX * rand() / (RAND_MAX + 1.0);
         tmp.y = sY * rand() / (RAND_MAX + 1.0);
@@ -40,7 +42,7 @@ void stowParticle(Coordinate *right_coord, int i) {
             dx = tmp.x - particles[j].coord.x;
             dy = tmp.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy); //back to the "box"
-            dr=sqrt(dx * dx + dy * dy);
+            dr = sqrt(dx * dx + dy * dy);
             overlap = (dr < 0.2); //checking if the position is already taken
         }
     } while (overlap == 1); //regenerate until, the  coordinate is unused
@@ -178,17 +180,56 @@ void start() {
 
 void end() {
     time(&time_end);
+    double timeDiff = 0.0;
     printf("Program started: %s\n", asctime(localtime(&time_begin)));
     printf("Program ended: %s\n", asctime(localtime(&time_end)));
-    printf("Program ran: %f seconds\n", difftime(time_end, time_begin));
+    timeDiff = difftime(time_end, time_begin);
+    printf("Program ran: %.2f seconds, %.2f minutes.\n", timeDiff, timeDiff / 60);
 }
 
-int main() {
+//return 1 if ok,
+int properFilename(char *filename) {
+    regex_t regexCompiled;
+    char *pattern = "[a-zA-Z]+([a-z0-9A-Z_])*";
+    int result;
+    size_t maxMatches = 1; //Is the number of matches allowed.
+    size_t maxGroups = 1;
+    regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
+
+    if (regcomp(&regexCompiled, pattern, REG_EXTENDED)) {
+        printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
+        exit(1);
+    }
+
+    //If successful, the regexec() function returns zero to indicate that string matched pattern
+    result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
+                                                                          (pmatch[maxGroups - 1].rm_eo ==
+                                                                           strlen(filename))) : 0;
+
+    regfree(&regexCompiled);
+    return result;
+}
+
+int main(int argc, char *argv[]) {
+    char filename[100] = {0};
+    if (argc > 1) {
+        char *inputParameter = argv[1];
+        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
+                sizeof(filename));
+    } else {
+        strncpy(filename, "result.mvi", sizeof(filename));
+    }
+
     start();
     initParticles(200, 20.0, 0.002);
-    moviefile = fopen("result.mvi", "w");
+
+    moviefile = fopen(filename, "w");
     statistics_file = fopen("statistics.txt", "wt");
-    for (t = 0; t < 10000; t++) {
+    if (!moviefile || !statistics_file) {
+        fprintf(stderr, "Failed to open file.\n");
+        return 1;
+    }
+    for (t = 0; t < 100000; t++) {
         calculatePairwiseForces();
         calculateExternalForces();
         write_statistics();
@@ -204,6 +245,7 @@ int main() {
     fclose(statistics_file);
     fclose(moviefile);
     end();
+    printf("The result(for plot) can be found in file: %s\n", filename);
     free(particles);
     return 0;
 }
