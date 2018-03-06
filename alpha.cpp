@@ -30,7 +30,7 @@ double r;
 double dt;
 
 void initParticles() {
-    N = 2000;
+    N = 400;
     ID = new int[N];
 
     x = new double[N];
@@ -155,10 +155,12 @@ void calculateForces() {
 
             double f = 1 / (distance * distance) * exp(- distance / r);
 
-            fx[i] += f * diffX / distance;
-            fy[i] += f * diffY / distance;
-            fx[j] -= f * diffX / distance;
-            fy[j] -= f * diffY / distance;
+            double dist_sqrt = sqrt(distance);
+
+            fx[i] += f * diffX / dist_sqrt;
+            fy[i] += f * diffY / dist_sqrt;
+            fx[j] -= f * diffX / dist_sqrt;
+            fy[j] -= f * diffY / dist_sqrt;
         }
     }
 }
@@ -244,7 +246,7 @@ int main(int argc, char* argv[]) {
     else
         moviefile = "valami.txt";
     f = fopen(moviefile, "wb");
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
         calculateForces();
         calculateExternalForces();
         moveParticles();
