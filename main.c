@@ -34,8 +34,9 @@ void keepParticleInSystem(double *dx, double *dy) {
 void stowParticle(Coordinate *right_coord, int i) {
     Coordinate tmp;
     double dx, dy, dr;
-    int overlap = 0, j;
+    int overlap, j;
     do {
+        overlap = 0;
         tmp.x = sX * rand() / (RAND_MAX + 1.0);
         tmp.y = sY * rand() / (RAND_MAX + 1.0);
         for (j = 0; j < i; j++) {
@@ -43,7 +44,10 @@ void stowParticle(Coordinate *right_coord, int i) {
             dy = tmp.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy); //back to the "box"
             dr = sqrt(dx * dx + dy * dy);
-            overlap = (dr < 0.2); //checking if the position is already taken
+            if (dr<0.2) { //checking if the position is already taken
+                overlap = 1;
+                break;
+            }
         }
     } while (overlap == 1); //regenerate until, the  coordinate is unused
 
@@ -66,23 +70,29 @@ void initParticles(int nrParticles, double systemSize, double timeStep) {
     while (i < N) {
         particles[i].id = i;
         particles[i].color = ((rand() / (RAND_MAX + 1.0)) > 0.5); //color
+        particles[i].q = particles[i].color ? -1.0:1.0;
         stowParticle(&position, i);  //particle coordinate
         particles[i].coord.x = position.x;
         particles[i].coord.y = position.y;
-        i++; //miert csak a kovetkezonek kell allitani az erot?
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
+        i++;
+
     }
+
+    //particles initialized
+    FILE *teszt;
+    teszt=fopen("reszecskek.txt","wt");
+    for(int i=0;i<N;i++)
+        fprintf(teszt,"%lf %lf\n",particles[i].coord.x,particles[i].coord.y);
+    fclose(teszt);
+
 }
 
 void calculateExternalForces() {
     int i;
     for (i = 0; i < N; i++) {
-        if (particles[i].color) {
-            particles[i].fx -= 0.5;
-        } else {
-            particles[i].fx += 0.5;
-        }
+            particles[i].fx += particles[i].q * 0.5;
     }
 }
 
@@ -99,7 +109,7 @@ void calculatePairwiseForces() {
             dr2 = dx * dx + dy * dy;
             dr = sqrt(dr2);
 
-            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f\n", dr)) : (f = 1 / dr2 * exp(-0.25 * dr));
+            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr,i,particles[i].coord.x,particles[i].coord.y,j,particles[j].coord.x,particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
 
             //project it to the axes get the fx, fy components
             fx = f * dx / dr;
@@ -146,7 +156,7 @@ void write_cmovie() {
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     for (i = 0; i < N; i++) {
-        intholder = particles[i].color + 2; //miert kell +2
+        intholder = particles[i].color + 2;
         fwrite(&intholder, sizeof(int), 1, moviefile);
         intholder = particles[i].id;//ID
         fwrite(&intholder, sizeof(int), 1, moviefile);
@@ -163,7 +173,8 @@ void write_cmovie() {
 void write_statistics() {
     double avg_vx = 0.0;
     for (int i = 0; i < N; i++) {
-        avg_vx += particles[i].fx;
+        if (particles[i].color==0) avg_vx += particles[i].fx;
+        if (particles[i].color==1) avg_vx -= particles[i].fx;
     }
 
     avg_vx = avg_vx / (double) N;
@@ -174,7 +185,6 @@ void write_statistics() {
 
 void start() {
     printf("\tLet's do it!\n");
-    //  srand(time(NULL));
     time(&time_begin);
 }
 
@@ -190,18 +200,18 @@ void end() {
 //return 1 if ok,
 int properFilename(char *filename) {
     regex_t regexCompiled;
-    char *pattern = "[a-zA-Z]+([a-z0-9A-Z_])*";
+    char const *PATTERN = "[a-zA-Z]+([a-z0-9A-Z_])*";
     int result;
     size_t maxMatches = 1; //Is the number of matches allowed.
     size_t maxGroups = 1;
     regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
 
-    if (regcomp(&regexCompiled, pattern, REG_EXTENDED)) {
+    if (regcomp(&regexCompiled, PATTERN, REG_EXTENDED)) {
         printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
         exit(1);
     }
 
-    //If successful, the regexec() function returns zero to indicate that string matched pattern
+    //If successful, the regexec() function returns zero to indicate that string matched PATTERN
     result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
                                                                           (pmatch[maxGroups - 1].rm_eo ==
                                                                            strlen(filename))) : 0;
@@ -223,7 +233,7 @@ int main(int argc, char *argv[]) {
     start();
     initParticles(200, 20.0, 0.002);
 
-    moviefile = fopen(filename, "w");
+    moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
         fprintf(stderr, "Failed to open file.\n");

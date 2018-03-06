@@ -11,6 +11,7 @@ struct Particle {
     int color;      //to distinguish it the particles
     Coordinate coord;// double x, y;    //x,y coordinate
     double fx, fy;  //fx,fy forces acting on the particle
+    double q;       //toltes
 };
 
 typedef struct Particle Particle;

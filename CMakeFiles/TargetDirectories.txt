@@ -1,0 +1,3 @@
+/home/deim1508/Git/brownian/CMakeFiles/rebuild_cache.dir
+/home/deim1508/Git/brownian/CMakeFiles/edit_cache.dir
+/home/deim1508/Git/brownian/CMakeFiles/brownian.dir

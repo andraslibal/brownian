@@ -1,0 +1,409 @@
+The system is: Linux - 3.13.0-39-generic - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/cc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is Clang, found in "/home/deim1508/Git/brownian/CMakeFiles/3.9.6/CompilerIdC/a.out"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_38dde/fast"
+/usr/bin/make -f CMakeFiles/cmTC_38dde.dir/build.make CMakeFiles/cmTC_38dde.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_38dde.dir/testCCompiler.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_38dde.dir/testCCompiler.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/testCCompiler.c
+Linking C executable cmTC_38dde
+/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_38dde.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTC_38dde.dir/testCCompiler.c.o  -o cmTC_38dde 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_c1e3a/fast"
+/usr/bin/make -f CMakeFiles/cmTC_c1e3a.dir/build.make CMakeFiles/cmTC_c1e3a.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o   -c /home/deim1508/Git/clion-2017.3.3/bin/cmake/share/cmake-3.9/Modules/CMakeCCompilerABI.c
+Linking C executable cmTC_c1e3a
+/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c1e3a.dir/link.txt --verbose=1
+/usr/bin/cc     -v CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o  -o cmTC_c1e3a 
+Ubuntu clang version 3.4-1ubuntu3 (tags/RELEASE_34/final) (based on LLVM 3.4)
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9
+Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8.4
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9
+Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8.4
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9.3
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8
+ "/usr/bin/ld" -z relro --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_c1e3a /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8 -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/lib/x86_64-linux-gnu -L/lib/../lib64 -L/usr/lib/x86_64-linux-gnu -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../.. -L/lib -L/usr/lib CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o -L/opt/intel/lib/intel64 -L/opt/intel/tbb/lib/intel64 -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/usr/bin/make" "cmTC_c1e3a/fast"]
+  ignore line: [/usr/bin/make -f CMakeFiles/cmTC_c1e3a.dir/build.make CMakeFiles/cmTC_c1e3a.dir/build]
+  ignore line: [make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp']
+  ignore line: [Building C object CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/cc    -o CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o   -c /home/deim1508/Git/clion-2017.3.3/bin/cmake/share/cmake-3.9/Modules/CMakeCCompilerABI.c]
+  ignore line: [Linking C executable cmTC_c1e3a]
+  ignore line: [/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c1e3a.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/cc     -v CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o  -o cmTC_c1e3a ]
+  ignore line: [Ubuntu clang version 3.4-1ubuntu3 (tags/RELEASE_34/final) (based on LLVM 3.4)]
+  ignore line: [Target: x86_64-pc-linux-gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8.4]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8.4]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9.3]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+  link line: [ "/usr/bin/ld" -z relro --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_c1e3a /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8 -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/lib/x86_64-linux-gnu -L/lib/../lib64 -L/usr/lib/x86_64-linux-gnu -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../.. -L/lib -L/usr/lib CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o -L/opt/intel/lib/intel64 -L/opt/intel/tbb/lib/intel64 -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o]
+    arg [/usr/bin/ld] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_c1e3a] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o] ==> ignore
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu]
+    arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+    arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+    arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..]
+    arg [-L/lib] ==> dir [/lib]
+    arg [-L/usr/lib] ==> dir [/usr/lib]
+    arg [CMakeFiles/cmTC_c1e3a.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-L/opt/intel/lib/intel64] ==> dir [/opt/intel/lib/intel64]
+    arg [-L/opt/intel/tbb/lib/intel64] ==> dir [/opt/intel/tbb/lib/intel64]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o] ==> ignore
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8] ==> [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/../lib64] ==> [/lib64]
+  collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> [/usr/lib]
+  collapse library dir [/lib] ==> [/lib]
+  collapse library dir [/usr/lib] ==> [/usr/lib]
+  collapse library dir [/opt/intel/lib/intel64] ==> [/opt/intel/lib/intel64]
+  collapse library dir [/opt/intel/tbb/lib/intel64] ==> [/opt/intel/tbb/lib/intel64]
+  implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+  implicit dirs: [/usr/lib/gcc/x86_64-linux-gnu/4.8;/usr/lib/x86_64-linux-gnu;/lib/x86_64-linux-gnu;/lib64;/usr/lib;/lib;/opt/intel/lib/intel64;/opt/intel/tbb/lib/intel64]
+  implicit fwks: []
+
+
+
+
+Detecting C [-std=c11] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_7003b/fast"
+/usr/bin/make -f CMakeFiles/cmTC_7003b.dir/build.make CMakeFiles/cmTC_7003b.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_7003b.dir/feature_tests.c.o
+/usr/bin/cc   -std=c11 -o CMakeFiles/cmTC_7003b.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTC_7003b
+/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7003b.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTC_7003b.dir/feature_tests.c.o  -o cmTC_7003b 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:1c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c99] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_ec6f2/fast"
+/usr/bin/make -f CMakeFiles/cmTC_ec6f2.dir/build.make CMakeFiles/cmTC_ec6f2.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ec6f2.dir/feature_tests.c.o
+/usr/bin/cc   -std=c99 -o CMakeFiles/cmTC_ec6f2.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTC_ec6f2
+/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ec6f2.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTC_ec6f2.dir/feature_tests.c.o  -o cmTC_ec6f2 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c90] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_9d578/fast"
+/usr/bin/make -f CMakeFiles/cmTC_9d578.dir/build.make CMakeFiles/cmTC_9d578.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_9d578.dir/feature_tests.c.o
+/usr/bin/cc   -std=c90 -o CMakeFiles/cmTC_9d578.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTC_9d578
+/home/deim1508/Git/clion-2017.3.3/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9d578.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTC_9d578.dir/feature_tests.c.o  -o cmTC_9d578 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:0c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:0c_variadic_macros
+The system is: Linux - 3.13.0-39-generic - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/cc 
+Build flags: 
+Id flags: 
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is Clang, found in "/home/deim1508/Git/brownian/CMakeFiles/3.2.2/CompilerIdC/a.out"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec1082737667/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1082737667.dir/build.make CMakeFiles/cmTryCompileExec1082737667.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1082737667.dir/testCCompiler.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec1082737667.dir/testCCompiler.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/testCCompiler.c
+Linking C executable cmTryCompileExec1082737667
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1082737667.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec1082737667.dir/testCCompiler.c.o  -o cmTryCompileExec1082737667 -rdynamic 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec1951298599/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1951298599.dir/build.make CMakeFiles/cmTryCompileExec1951298599.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-3.2/Modules/CMakeCCompilerABI.c
+Linking C executable cmTryCompileExec1951298599
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1951298599.dir/link.txt --verbose=1
+/usr/bin/cc      -v CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec1951298599 -rdynamic  
+Ubuntu clang version 3.4-1ubuntu3 (tags/RELEASE_34/final) (based on LLVM 3.4)
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9
+Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8.4
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9
+Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9.3
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8.4
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9.3
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8
+ "/usr/bin/ld" -export-dynamic -z relro --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTryCompileExec1951298599 /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8 -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/lib/x86_64-linux-gnu -L/lib/../lib64 -L/usr/lib/x86_64-linux-gnu -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../.. -L/lib -L/usr/lib CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o -L/opt/intel/lib/intel64 -L/opt/intel/tbb/lib/intel64 -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/usr/bin/make" "cmTryCompileExec1951298599/fast"]
+  ignore line: [/usr/bin/make -f CMakeFiles/cmTryCompileExec1951298599.dir/build.make CMakeFiles/cmTryCompileExec1951298599.dir/build]
+  ignore line: [make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp']
+  ignore line: [/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1]
+  ignore line: [Building C object CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/cc    -o CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-3.2/Modules/CMakeCCompilerABI.c]
+  ignore line: [Linking C executable cmTryCompileExec1951298599]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1951298599.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/cc      -v CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec1951298599 -rdynamic  ]
+  ignore line: [Ubuntu clang version 3.4-1ubuntu3 (tags/RELEASE_34/final) (based on LLVM 3.4)]
+  ignore line: [Target: x86_64-pc-linux-gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/i686-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8.4]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/i686-linux-gnu/4.9.3]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8.4]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.9.3]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+  link line: [ "/usr/bin/ld" -export-dynamic -z relro --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTryCompileExec1951298599 /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8 -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/lib/x86_64-linux-gnu -L/lib/../lib64 -L/usr/lib/x86_64-linux-gnu -L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../.. -L/lib -L/usr/lib CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o -L/opt/intel/lib/intel64 -L/opt/intel/tbb/lib/intel64 -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o]
+    arg [/usr/bin/ld] ==> ignore
+    arg [-export-dynamic] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTryCompileExec1951298599] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o] ==> ignore
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8]
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu]
+    arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+    arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+    arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+    arg [-L/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..]
+    arg [-L/lib] ==> dir [/lib]
+    arg [-L/usr/lib] ==> dir [/usr/lib]
+    arg [CMakeFiles/cmTryCompileExec1951298599.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-L/opt/intel/lib/intel64] ==> dir [/opt/intel/lib/intel64]
+    arg [-L/opt/intel/tbb/lib/intel64] ==> dir [/opt/intel/tbb/lib/intel64]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/crtend.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc_s]
+  remove lib [gcc]
+  remove lib [gcc_s]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8] ==> [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/../lib64] ==> [/lib64]
+  collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> [/usr/lib]
+  collapse library dir [/lib] ==> [/lib]
+  collapse library dir [/usr/lib] ==> [/usr/lib]
+  collapse library dir [/opt/intel/lib/intel64] ==> [/opt/intel/lib/intel64]
+  collapse library dir [/opt/intel/tbb/lib/intel64] ==> [/opt/intel/tbb/lib/intel64]
+  implicit libs: [c]
+  implicit dirs: [/usr/lib/gcc/x86_64-linux-gnu/4.8;/usr/lib/x86_64-linux-gnu;/lib/x86_64-linux-gnu;/lib64;/usr/lib;/lib;/opt/intel/lib/intel64;/opt/intel/tbb/lib/intel64]
+  implicit fwks: []
+
+
+
+
+Detecting C [-std=c11] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec3157366317/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3157366317.dir/build.make CMakeFiles/cmTryCompileExec3157366317.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3157366317.dir/feature_tests.c.o
+/usr/bin/cc   -std=c11 -o CMakeFiles/cmTryCompileExec3157366317.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTryCompileExec3157366317
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3157366317.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec3157366317.dir/feature_tests.c.o  -o cmTryCompileExec3157366317 -rdynamic 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:1c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c99] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec1866903296/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1866903296.dir/build.make CMakeFiles/cmTryCompileExec1866903296.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1866903296.dir/feature_tests.c.o
+/usr/bin/cc   -std=c99 -o CMakeFiles/cmTryCompileExec1866903296.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTryCompileExec1866903296
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1866903296.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec1866903296.dir/feature_tests.c.o  -o cmTryCompileExec1866903296 -rdynamic 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c90] compiler features compiled with the following output:
+Change Dir: /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec3737004002/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3737004002.dir/build.make CMakeFiles/cmTryCompileExec3737004002.dir/build
+make[1]: Entering directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/deim1508/Git/brownian/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3737004002.dir/feature_tests.c.o
+/usr/bin/cc   -std=c90 -o CMakeFiles/cmTryCompileExec3737004002.dir/feature_tests.c.o   -c /home/deim1508/Git/brownian/CMakeFiles/feature_tests.c
+Linking C executable cmTryCompileExec3737004002
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3737004002.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec3737004002.dir/feature_tests.c.o  -o cmTryCompileExec3737004002 -rdynamic 
+make[1]: Leaving directory `/home/deim1508/Git/brownian/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:0c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:0c_variadic_macros
