@@ -3,8 +3,11 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
-#include "random_numrec.c"
+#include <vector>
+#include <string>
 #include <cmath>
+
+#include "random_numrec.c"
 
 using namespace std;
 
@@ -29,7 +32,8 @@ double r;
 //time
 double dt;
 
-
+//verlet lists
+vector<vector<int> > verlet;
 
 void initParticles() {
     N = 400;
@@ -117,6 +121,37 @@ void generateCoordinates() {
     }
 }
 
+void calculateVerletList() {
+
+    double Sx_2 = Sx / 2.0;
+    double Sy_2 = Sy / 2.0;
+
+    for (int i = 0; i < verlet.size(); i++)
+        verlet.at(i).clear();
+    verlet.clear();
+
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+            int diffX = x[i] - x[j];
+            int diffY = y[i] - y[j];
+
+            if (diffX < -Sx_2) diffX += Sx;
+            if (diffX > Sx_2) diffX -= Sx;
+            if (diffY < Sy_2) diffY += Sy;
+            if (diffY > Sy_2) diffY -= Sy;
+
+            double distance = diffX * diffX + diffY * diffY;
+
+            if (distance < r * r) {
+                vector<int> v;
+                v.push_back(i);
+                v.push_back(j);
+                verlet.push_back(v);
+            }
+        }
+    }
+}
+
 void writeToFile(char* filename) {
     ofstream f(filename);
     cout << filename << endl;
@@ -143,27 +178,29 @@ void calculateForces() {
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
 
-    for (int i = 0; i < N; i++) {
-        for (int j = i + 1; j < N; j++) {
-            double diffX = x[i] - x[j];
-            double diffY = y[i] - y[j];
+    for (int it = 0; it < verlet.size(); it++) {
 
-            if (diffX < -Sx_2) diffX += Sx;
-            if (diffX > Sx_2) diffX -=Sx;
-            if (diffY < -Sy_2) diffY += Sy;
-            if (diffY > Sy_2) diffY -= Sy;
+        int i = verlet.at(it).at(0);
+        int j = verlet.at(it).at(1);
+        
+        double diffX = x[i] - x[j];
+        double diffY = y[i] - y[j];
 
-            double distance = diffX * diffX + diffY * diffY;
+        if (diffX < -Sx_2) diffX += Sx;
+        if (diffX > Sx_2) diffX -=Sx;
+        if (diffY < -Sy_2) diffY += Sy;
+        if (diffY > Sy_2) diffY -= Sy;
 
-            double f = 1 / (distance * distance) * exp(- distance / r);
+        double distance = diffX * diffX + diffY * diffY;
 
-            double dist_sqrt = sqrt(distance);
+        double f = 1 / (distance * distance) * exp(- distance / r);
 
-            fx[i] += f * diffX / dist_sqrt;
-            fy[i] += f * diffY / dist_sqrt;
-            fx[j] -= f * diffX / dist_sqrt;
-            fy[j] -= f * diffY / dist_sqrt;
-        }
+        double dist_sqrt = sqrt(distance);
+
+        fx[i] += f * diffX / dist_sqrt;
+        fy[i] += f * diffY / dist_sqrt;
+        fx[j] -= f * diffX / dist_sqrt;
+        fy[j] -= f * diffY / dist_sqrt;
     }
 }
 
@@ -187,28 +224,6 @@ void moveParticles() {
         fy[i] = 0.0;
     }
 }
-
-void writeCmovie(char* file, int t)
-{
-    int i;
-    float floatholder;
-    int intholder;
-
-    ofstream f(file, ios_base::app | ios_base::out | ios::binary);
-    
-    f << N;
-    f << t;
-    
-    for (int i = 0; i < N; i++)
-    {
-        f << color[i] + 2;
-        f << ID[i];
-        f << x[i];
-        f << y[i];
-        f << 1.0;
-    }
-    f.close();
-} 
 
 void write_cmovie(FILE* moviefile, int t)
 {
@@ -241,14 +256,18 @@ void write_cmovie(FILE* moviefile, int t)
 int main(int argc, char* argv[]) {
     initParticles();
     generateCoordinates();
-    char* moviefile = new char[20];
+    const char* moviefile = new char[20];
     FILE* f;
     if (argc == 2) 
         moviefile = argv[1];
     else
-        moviefile = "valami.txt";
+        moviefile = "valami";
     f = fopen(moviefile, "wb");
     for (int i = 0; i < 10000; i++) {
+        if (i % 10 == 0) {
+            cout << i << "th iteration" << endl;
+            calculateVerletList();
+        }
         calculateForces();
         calculateExternalForces();
         moveParticles();
@@ -256,8 +275,6 @@ int main(int argc, char* argv[]) {
         if (i % 100 == 0)
             write_cmovie(f, i);
 
-        if (i % 10 == 0)
-            cout << i << "th iteration" << endl;
     }
     freeData();
     return 0;
