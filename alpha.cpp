@@ -2,7 +2,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <ios>
 #include "random_numrec.c"
+#include <cmath>
 
 using namespace std;
 
@@ -22,6 +24,10 @@ int *color = NULL;
 double *q = NULL;
 // system size
 double Sx, Sy;
+// distance 
+double r;
+//time
+double dt;
 
 void initParticles() {
     N = 2000;
@@ -38,6 +44,19 @@ void initParticles() {
 
     Sx = 20.0;
     Sy = 20.0;
+
+    r = 4.0;
+    dt = 0.01;
+}
+
+void freeData() {
+    delete[] ID;
+    delete[] x;
+    delete[] y;
+    delete[] fx;
+    delete[] fy;
+    delete[] color;
+    delete[] q;
 }
 
 void generateCoordinates() {
@@ -96,16 +115,6 @@ void generateCoordinates() {
     }
 }
 
-void freeData() {
-    delete[] ID;
-    delete[] x;
-    delete[] y;
-    delete[] fx;
-    delete[] fy;
-    delete[] color;
-    delete[] q;
-}
-
 void writeToFile(char* filename) {
     ofstream f(filename);
     cout << filename << endl;
@@ -128,13 +137,124 @@ void writeToFile(char* filename) {
     f.close();
 }
 
+void calculateForces() {
+    double Sx_2 = Sx / 2.0;
+    double Sy_2 = Sy / 2.0;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+            double diffX = x[i] - x[j];
+            double diffY = y[i] - y[j];
+
+            if (diffX < -Sx_2) diffX += Sx;
+            if (diffX > Sx_2) diffX -=Sx;
+            if (diffY < -Sy_2) diffY += Sy;
+            if (diffY > Sy_2) diffY -= Sy;
+
+            double distance = diffX * diffX + diffY * diffY;
+
+            double f = 1 / (distance * distance) * exp(- distance / r);
+
+            fx[i] += f * diffX / distance;
+            fy[i] += f * diffY / distance;
+            fx[j] -= f * diffX / distance;
+            fy[j] -= f * diffY / distance;
+        }
+    }
+}
+
+void calculateExternalForces() {
+    for (int i = 0; i < N; i++) {
+        fx[i] += q[i] * 0.5;
+    }
+}
+
+void moveParticles() {
+    for (int i = 0; i < N; i++) {
+        x[i] += fx[i] * dt;
+        y[i] += fy[i] * dt;
+
+        if (x[i] < 0) x[i] += Sx;
+        if (x[i] > Sx) x[i] -= Sx;
+        if (y[i] < 0) y[i] += Sy;
+        if (y[i] > Sy) y[i] -=Sy;
+
+        fx[i] = 0.0;
+        fy[i] = 0.0;
+    }
+}
+
+void writeCmovie(char* file, int t)
+{
+    int i;
+    float floatholder;
+    int intholder;
+
+    ofstream f(file, ios_base::app | ios_base::out | ios::binary);
+    
+    f << N;
+    f << t;
+    
+    for (int i = 0; i < N; i++)
+    {
+        f << color[i] + 2;
+        f << ID[i];
+        f << x[i];
+        f << y[i];
+        f << 1.0;
+    }
+    f.close();
+} 
+
+void write_cmovie(FILE* moviefile, int t)
+{
+    int i;
+    float floatholder;
+    int intholder;
+    
+    intholder = N;
+    fwrite(&intholder,sizeof(int),1,moviefile);
+    
+    intholder = t;
+    fwrite(&intholder,sizeof(int),1,moviefile);
+    
+    for (int i = 0; i < N; i++)
+    {
+        intholder = color[i] + 2;
+        fwrite(&intholder,sizeof(int),1,moviefile);
+        intholder = ID[i];//ID
+        fwrite(&intholder,sizeof(int),1,moviefile);
+        floatholder = (float)x[i];
+        fwrite(&floatholder,sizeof(float),1, moviefile);
+        floatholder = (float)y[i];
+        fwrite(&floatholder,sizeof(float),1,moviefile);
+        floatholder = 1.0;//cum_disp, cmovie format
+        fwrite(&floatholder,sizeof(float),1,moviefile);
+    }
+    
+}
+
 int main(int argc, char* argv[]) {
     initParticles();
     generateCoordinates();
-    if (argc == 2)
-        writeToFile(argv[1]);
+    char* moviefile = new char[20];
+    FILE* f;
+    if (argc == 2) 
+        moviefile = argv[1];
     else
-        writeToFile("valami.txt");
+        moviefile = "valami.txt";
+    f = fopen(moviefile, "wb");
+    for (int i = 0; i < 1000; i++) {
+        calculateForces();
+        calculateExternalForces();
+        moveParticles();
+
+        if (i % 100 == 0)
+            write_cmovie(f, i);
+
+        if (i % 10 == 0)
+            cout << i << "th iteration" << endl;
+    }
     freeData();
     return 0;
 }
