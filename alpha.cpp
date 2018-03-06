@@ -29,6 +29,8 @@ double r;
 //time
 double dt;
 
+
+
 void initParticles() {
     N = 400;
     ID = new int[N];
