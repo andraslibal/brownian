@@ -1,0 +1,26 @@
+Plotter: how to use
+compiling needs the x11 libraries
+they are standard in linux, can be added on a Mac
+
+you need a tiny makefile or just add the libraries in the command line
+XLIBS = -L/usr/X11R6/lib -lX11
+XINCLUDE = -I/usr/X11R6/include/
+gcc plot.c -o plot -lm  $(XLIBS) $(XINCLUDE)
+
+once it compiles
+
+./plot gfile
+(in the gfile you can set the system size etc)
+
+plot results.mvi
+
+you can try these:
+
+> set delay 100
+> replot
+> toggle_traj
+click - pause
+> cont
+right click fast forward
+left click slower, or reverse
+
