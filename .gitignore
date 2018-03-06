@@ -1,0 +1,6 @@
+*.out
+.vscode
+*.json
+*.txt
+result
+plot*
