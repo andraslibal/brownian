@@ -49,8 +49,34 @@ int flag_rebuild_verlet;
 double *x_so_far;
 double *y_so_far;
 
+//time
+double dt = 0.0;
+time_t beginning_time = 0;
+time_t ending_time = 0;
 
+void start_timing()
+{
+    time(&beginning_time);
+}
+
+void stop_timing()
+{
+    time(&ending_time);
+    double difference = difftime(ending_time, beginning_time);
+    tm* time_info = localtime(&beginning_time);
+    cout << "Program started at:" << asctime(time_info) << endl;
+
+<<<<<<< HEAD
 void initParticles() 
+=======
+    time_info = localtime(&ending_time);
+    cout << "Program ended at:" << asctime(time_info) << endl;
+
+    cout << "Program running time was " << difference << " seconds" << endl;
+}
+
+void initParticles()
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
     N = 6400;
     ID = new int[N];
@@ -77,7 +103,8 @@ void initParticles()
     y_so_far = new double[N];
 }
 
-void freeData() {
+void freeData()
+{
     delete[] ID;
     delete[] x;
     delete[] y;
@@ -89,12 +116,20 @@ void freeData() {
     delete[] y_so_far;
 }
 
+<<<<<<< HEAD
 void generateCoordinates() 
+=======
+void generateCoordinates()
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
 
+<<<<<<< HEAD
     for (int i = 0; i < N; i++) 
+=======
+    for (int i = 0; i < N; i++)
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     {
         ID[i] = i;
 
@@ -106,7 +141,8 @@ void generateCoordinates()
             tmpX = Sx * Rand();
             tmpY = Sy * Rand();
             // checking if in this position there already is an element
-            for (j = 0; j < i; j++) {
+            for (j = 0; j < i; j++)
+            {
                 double diffX = x[j] - tmpX;
                 double diffY = y[j] - tmpY;
 
@@ -132,11 +168,13 @@ void generateCoordinates()
         y[i] = tmpY;
 
         // setting color and charge to particle
-        if (Rand() > 0.5) {
+        if (Rand() > 0.5)
+        {
             color[i] = 1;
             q[i] = 1.0;
         }
-        else {
+        else
+        {
             color[i] = 0;
             q[i] = -1.0;
         }
@@ -149,7 +187,11 @@ void generateCoordinates()
     }
 }
 
+<<<<<<< HEAD
 void calculateVerletList() 
+=======
+void calculateVerletList()
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
 
     double Sx_2 = Sx / 2.0;
@@ -212,7 +254,8 @@ void colorverlet()
 }
 
 
-void writeToFile(char* filename) {
+void writeToFile(char* filename)
+{
     ofstream f(filename);
     cout << filename << endl;
     f << setw(20) << "ID";
@@ -264,15 +307,17 @@ void calculateForces() {
     }
 }
 
-void calculateExternalForces() {
+void calculateExternalForces()
+{
     for (int i = 0; i < N; i++)
     {
         fx[i] += q[i] * 0.5;
     }
 }
 
-void moveParticles() {
-    double deltax,deltay;
+void moveParticles()
+{
+    double deltax, deltay;
 
     for (int i = 0; i < N; i++) 
     {
@@ -328,11 +373,16 @@ void write_cmovie(FILE* moviefile, int t)
     
 }
 
+<<<<<<< HEAD
 int main(int argc, char* argv[]) 
 {
     printf("Generic BD simulation\n");
     printf("Simulating spontaneous lane formation\n");
 
+=======
+int main(int argc, char* argv[])
+{
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     initParticles();
     generateCoordinates();
     const char* moviefile = new char[20];
@@ -345,7 +395,11 @@ int main(int argc, char* argv[])
 
     total_runtime = 20000;
     time_echo = 500;
+<<<<<<< HEAD
 
+=======
+    start_timing();
+>>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     for (int i = 0; i < total_runtime; i++) 
     {
         if (i % time_echo == 0)
@@ -368,5 +422,6 @@ int main(int argc, char* argv[])
             write_cmovie(f, i);
     }
     freeData();
+    start_timing();
     return 0;
 }
