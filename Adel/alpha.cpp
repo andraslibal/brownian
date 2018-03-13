@@ -137,13 +137,10 @@ void calculateVerletList() {
         verlet.at(i).clear();
     verlet.clear();
 
-
-
     for (int i = 0; i < N; i++) {
-        //int hannyalhatkolcson = 0;
         for (int j = i + 1; j < N; j++) {
-            int diffX = x[i] - x[j];
-            int diffY = y[i] - y[j];
+            double diffX = x[i] - x[j];
+            double diffY = y[i] - y[j];
 
             if (diffX < -Sx_2) diffX += Sx;
             if (diffX > Sx_2) diffX -= Sx;
@@ -156,30 +153,24 @@ void calculateVerletList() {
                 vector<int> v;
                 v.push_back(i);
                 v.push_back(j);
-                //printf("%d %d %d %lf\n",v.size(),v.at(0),v.at(1),sqrt(distance));
-                //hannyalhatkolcson++;
                 verlet.push_back(v);
             }
         }
-    //printf("%d %d\n",i,hannyalhatkolcson);
     }
-    //printf("%d\n",verlet.size());
 }
 
 void colorverlet()
 {
     int i;
-    for(i=0;i<N;i++)
-        {
+    for(i=0;i<N;i++) {
         if (q[i]==-1) color[i] = 0;        
         if (q[i]==1) color[i] = 1;
-        }
+    }
 
-    for(i=0;i<verlet.size();i++)
-        {
+    for(i=0;i<verlet.size();i++) {
         if (verlet.at(i).at(0)==30) color[verlet.at(i).at(1)] = 2;
         if (verlet.at(i).at(1)==30) color[verlet.at(i).at(0)] = 2;
-        }
+    }
 }
 
 
@@ -223,10 +214,9 @@ void calculateForces() {
         if (diffY > Sy_2) diffY -= Sy;
 
         double distance = diffX * diffX + diffY * diffY;
-
-        double f = 1 / distance  * exp(- sqrt(distance) / r0);
-
         double dist_sqrt = sqrt(distance);
+
+        double f = exp(- dist_sqrt / r0) / distance;
 
         fx[i] += f * diffX / dist_sqrt;
         fy[i] += f * diffY / dist_sqrt;
