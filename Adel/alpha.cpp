@@ -46,11 +46,12 @@ int time_echo;
 //verlet lists
 vector<vector<int> > verlet;
 int flag_rebuild_verlet;
-double* x_so_far;
-double* y_so_far;
+double *x_so_far;
+double *y_so_far;
 
 
-void initParticles() {
+void initParticles() 
+{
     N = 6400;
     ID = new int[N];
 
@@ -88,11 +89,13 @@ void freeData() {
     delete[] y_so_far;
 }
 
-void generateCoordinates() {
+void generateCoordinates() 
+{
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) 
+    {
         ID[i] = i;
 
         int j;
@@ -141,10 +144,13 @@ void generateCoordinates() {
         // setting the initial forces
         fx[i] = 0.0;
         fy[i] = 0.0;
+        x_so_far[i] = 0.0;
+        y_so_far[i] = 0.0;
     }
 }
 
-void calculateVerletList() {
+void calculateVerletList() 
+{
 
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
@@ -175,11 +181,19 @@ void calculateVerletList() {
                 verlet.push_back(v);
             }
         }
+        
+    }
+
+    //clear all accumulated distances
+    for (int i = 0; i < N; i++)
+    {
         x_so_far[i] = 0.0;
         y_so_far[i] = 0.0;
     }
-
+    //clear rebuild flag
     flag_rebuild_verlet = 0;
+
+    printf(".");fflush(stdout);
 }
 
 void colorverlet()
@@ -276,6 +290,7 @@ void moveParticles() {
         if (y[i] < 0) y[i] += Sy;
         if (y[i] > Sy) y[i] -=Sy;
 
+        //only check on unset flag
         if (flag_rebuild_verlet == 0)
             if (x_so_far[i] * x_so_far[i] + y_so_far[i] * y_so_far[i] >= r_travel_max * r_travel_max)
                 flag_rebuild_verlet = 1;
@@ -313,7 +328,8 @@ void write_cmovie(FILE* moviefile, int t)
     
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) 
+{
     initParticles();
     generateCoordinates();
     const char* moviefile = new char[20];
@@ -323,8 +339,10 @@ int main(int argc, char* argv[]) {
     else
         moviefile = "moviefile.mvi";
     f = fopen(moviefile, "wb");
+
     total_runtime = 20000;
     time_echo = 500;
+
     for (int i = 0; i < total_runtime; i++) 
     {
         if (i % time_echo == 0)
