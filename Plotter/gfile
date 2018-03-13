@@ -1,4 +1,4 @@
-set xrange 0 20
-set yrange 0 20
+set xrange -5 45
+set yrange -5 45
 loadcolormap colors.txt
 cmovie

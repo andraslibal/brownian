@@ -27,16 +27,22 @@ int *color = NULL;
 double *q = NULL;
 // system size
 double Sx, Sy;
-// distance 
-double r;
+// distance cutoff for the interaction 
+double r0;
+// distance cutoff for the Verlet list 
+double r_verlet;
+
 //time
 double dt;
+
+//total runtime
+int total_runtime;
 
 //verlet lists
 vector<vector<int> > verlet;
 
 void initParticles() {
-    N = 400;
+    N = 1600;
     ID = new int[N];
 
     x = new double[N];
@@ -48,10 +54,11 @@ void initParticles() {
     color =  new int[N];
     q = new double[N];
 
-    Sx = 20.0;
-    Sy = 20.0;
+    Sx = 40.0;
+    Sy = 40.0;
 
-    r = 4.0;
+    r0 = 4.0;
+    r_verlet = 6.0;
     dt = 0.01;
 }
 
@@ -130,7 +137,10 @@ void calculateVerletList() {
         verlet.at(i).clear();
     verlet.clear();
 
+
+
     for (int i = 0; i < N; i++) {
+        //int hannyalhatkolcson = 0;
         for (int j = i + 1; j < N; j++) {
             int diffX = x[i] - x[j];
             int diffY = y[i] - y[j];
@@ -142,15 +152,36 @@ void calculateVerletList() {
 
             double distance = diffX * diffX + diffY * diffY;
 
-            if (distance < r * r) {
+            if (distance < r_verlet * r_verlet) {
                 vector<int> v;
                 v.push_back(i);
                 v.push_back(j);
+                //printf("%d %d %d %lf\n",v.size(),v.at(0),v.at(1),sqrt(distance));
+                //hannyalhatkolcson++;
                 verlet.push_back(v);
             }
         }
+    //printf("%d %d\n",i,hannyalhatkolcson);
     }
+    //printf("%d\n",verlet.size());
 }
+
+void colorverlet()
+{
+    int i;
+    for(i=0;i<N;i++)
+        {
+        if (q[i]==-1) color[i] = 0;        
+        if (q[i]==1) color[i] = 1;
+        }
+
+    for(i=0;i<verlet.size();i++)
+        {
+        if (verlet.at(i).at(0)==30) color[verlet.at(i).at(1)] = 2;
+        if (verlet.at(i).at(1)==30) color[verlet.at(i).at(0)] = 2;
+        }
+}
+
 
 void writeToFile(char* filename) {
     ofstream f(filename);
@@ -193,7 +224,7 @@ void calculateForces() {
 
         double distance = diffX * diffX + diffY * diffY;
 
-        double f = 1 / (distance * distance) * exp(- distance / r);
+        double f = 1 / distance  * exp(- sqrt(distance) / r0);
 
         double dist_sqrt = sqrt(distance);
 
@@ -261,12 +292,15 @@ int main(int argc, char* argv[]) {
     if (argc == 2) 
         moviefile = argv[1];
     else
-        moviefile = "valami";
+        moviefile = "moviefile.mvi";
     f = fopen(moviefile, "wb");
-    for (int i = 0; i < 10000; i++) {
+    total_runtime = 10000;
+    for (int i = 0; i < total_runtime; i++) {
         if (i % 10 == 0) {
-            cout << i << "th iteration" << endl;
+            double perc = (double)i/(double)total_runtime*100;
+            cout << i << "/" << total_runtime << " " << perc << "%" << endl;
             calculateVerletList();
+            colorverlet();
         }
         calculateForces();
         calculateExternalForces();
