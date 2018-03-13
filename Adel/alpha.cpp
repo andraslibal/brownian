@@ -330,6 +330,9 @@ void write_cmovie(FILE* moviefile, int t)
 
 int main(int argc, char* argv[]) 
 {
+    printf("Generic BD simulation\n");
+    printf("Simulating spontaneous lane formation\n");
+
     initParticles();
     generateCoordinates();
     const char* moviefile = new char[20];
