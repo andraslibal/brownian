@@ -66,9 +66,6 @@ void stop_timing()
     tm* time_info = localtime(&beginning_time);
     cout << "Program started at:" << asctime(time_info) << endl;
 
-<<<<<<< HEAD
-void initParticles() 
-=======
     time_info = localtime(&ending_time);
     cout << "Program ended at:" << asctime(time_info) << endl;
 
@@ -115,20 +112,12 @@ void freeData()
     delete[] y_so_far;
 }
 
-<<<<<<< HEAD
-void generateCoordinates() 
-=======
 void generateCoordinates()
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
 
-<<<<<<< HEAD
-    for (int i = 0; i < N; i++) 
-=======
     for (int i = 0; i < N; i++)
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     {
         ID[i] = i;
 
@@ -186,11 +175,7 @@ void generateCoordinates()
     }
 }
 
-<<<<<<< HEAD
-void calculateVerletList() 
-=======
 void calculateVerletList()
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
 
     double Sx_2 = Sx / 2.0;
@@ -372,16 +357,11 @@ void write_cmovie(FILE* moviefile, int t)
     
 }
 
-<<<<<<< HEAD
 int main(int argc, char* argv[]) 
 {
     printf("Generic BD simulation\n");
     printf("Simulating spontaneous lane formation\n");
 
-=======
-int main(int argc, char* argv[])
-{
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     initParticles();
     generateCoordinates();
     const char* moviefile = new char[20];
@@ -394,11 +374,7 @@ int main(int argc, char* argv[])
 
     total_runtime = 20000;
     time_echo = 500;
-<<<<<<< HEAD
-
-=======
     start_timing();
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
     for (int i = 0; i < total_runtime; i++) 
     {
         if (i % time_echo == 0)
