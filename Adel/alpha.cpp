@@ -76,7 +76,6 @@ void initParticles()
 }
 
 void initParticles()
->>>>>>> 1ad59714fd366f3aa20870d554ff101f681a3304
 {
     N = 6400;
     ID = new int[N];
