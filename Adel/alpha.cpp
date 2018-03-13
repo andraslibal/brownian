@@ -31,6 +31,10 @@ double Sx, Sy;
 double r0;
 // distance cutoff for the Verlet list 
 double r_verlet;
+//distance a particle needs to travel
+//to potentially destroy the Verlet list
+double r_travel_max;
+
 
 //time
 double dt;
@@ -40,9 +44,11 @@ int total_runtime;
 
 //verlet lists
 vector<vector<int> > verlet;
+int flag_rebuild_verlet;
+
 
 void initParticles() {
-    N = 1600;
+    N = 6400;
     ID = new int[N];
 
     x = new double[N];
@@ -54,12 +60,15 @@ void initParticles() {
     color =  new int[N];
     q = new double[N];
 
-    Sx = 40.0;
-    Sy = 40.0;
+    Sx = 80.0;
+    Sy = 80.0;
 
     r0 = 4.0;
     r_verlet = 6.0;
+    r_travel_max = r_verlet - r0;
     dt = 0.01;
+
+    flag_rebuild_verlet = 1;
 }
 
 void freeData() {
@@ -157,6 +166,11 @@ void calculateVerletList() {
             }
         }
     }
+
+    flag_rebuild_verlet = 0;
+    //nullara a x_so_farokat is
+
+
 }
 
 void colorverlet()
@@ -232,14 +246,27 @@ void calculateExternalForces() {
 }
 
 void moveParticles() {
-    for (int i = 0; i < N; i++) {
-        x[i] += fx[i] * dt;
-        y[i] += fy[i] * dt;
+    double deltax,deltay;
+
+    for (int i = 0; i < N; i++) 
+    {
+        deltax = fx[i] * dt;
+        deltay = fy[i] * dt;
+
+        x[i] += deltax;
+        y[i] += deltay;
+
+        x_so_far += deltax;
+        y_so_far += deltay;
 
         if (x[i] < 0) x[i] += Sx;
         if (x[i] > Sx) x[i] -= Sx;
         if (y[i] < 0) y[i] += Sy;
         if (y[i] > Sy) y[i] -=Sy;
+
+        if (flag_rebuild_verlet==0)
+         if (x_so_far*x_so_far + y_so_far*y_so_far >= r_travel_max * r_travel_max)
+                flag_rebuild_verlet = 1;
 
         fx[i] = 0.0;
         fy[i] = 0.0;
@@ -284,11 +311,16 @@ int main(int argc, char* argv[]) {
     else
         moviefile = "moviefile.mvi";
     f = fopen(moviefile, "wb");
-    total_runtime = 10000;
-    for (int i = 0; i < total_runtime; i++) {
-        if (i % 10 == 0) {
+    total_runtime = 20000;
+    for (int i = 0; i < total_runtime; i++) 
+        {
+        if (i%time_echo==0)
+        {
             double perc = (double)i/(double)total_runtime*100;
             cout << i << "/" << total_runtime << " " << perc << "%" << endl;
+        }
+        if (flag_rebuild_verlet==1) 
+        {
             calculateVerletList();
             colorverlet();
         }
