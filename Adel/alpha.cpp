@@ -41,10 +41,13 @@ double dt;
 
 //total runtime
 int total_runtime;
+int time_echo;
 
 //verlet lists
 vector<vector<int> > verlet;
 int flag_rebuild_verlet;
+double* x_so_far;
+double* y_so_far;
 
 
 void initParticles() {
@@ -69,6 +72,8 @@ void initParticles() {
     dt = 0.01;
 
     flag_rebuild_verlet = 1;
+    x_so_far = new double[N];
+    y_so_far = new double[N];
 }
 
 void freeData() {
@@ -79,6 +84,8 @@ void freeData() {
     delete[] fy;
     delete[] color;
     delete[] q;
+    delete[] x_so_far;
+    delete[] y_so_far;
 }
 
 void generateCoordinates() {
@@ -146,8 +153,10 @@ void calculateVerletList() {
         verlet.at(i).clear();
     verlet.clear();
 
-    for (int i = 0; i < N; i++) {
-        for (int j = i + 1; j < N; j++) {
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = i + 1; j < N; j++)
+        {
             double diffX = x[i] - x[j];
             double diffY = y[i] - y[j];
 
@@ -158,32 +167,33 @@ void calculateVerletList() {
 
             double distance = diffX * diffX + diffY * diffY;
 
-            if (distance < r_verlet * r_verlet) {
+            if (distance < r_verlet * r_verlet)
+            {
                 vector<int> v;
                 v.push_back(i);
                 v.push_back(j);
                 verlet.push_back(v);
             }
         }
+        x_so_far[i] = 0.0;
+        y_so_far[i] = 0.0;
     }
 
     flag_rebuild_verlet = 0;
-    //nullara a x_so_farokat is
-
-
 }
 
 void colorverlet()
 {
-    int i;
-    for(i=0;i<N;i++) {
-        if (q[i]==-1) color[i] = 0;        
-        if (q[i]==1) color[i] = 1;
+    for(int i = 0; i < N; i++)
+    {
+        if (q[i] == -1) color[i] = 0;        
+        if (q[i] == 1) color[i] = 1;
     }
 
-    for(i=0;i<verlet.size();i++) {
-        if (verlet.at(i).at(0)==30) color[verlet.at(i).at(1)] = 2;
-        if (verlet.at(i).at(1)==30) color[verlet.at(i).at(0)] = 2;
+    for(int i = 0; i < verlet.size(); i++)
+    {
+        if (verlet.at(i).at(0) == 30) color[verlet.at(i).at(1)] = 2;
+        if (verlet.at(i).at(1) == 30) color[verlet.at(i).at(0)] = 2;
     }
 }
 
@@ -214,7 +224,8 @@ void calculateForces() {
     double Sx_2 = Sx / 2.0;
     double Sy_2 = Sy / 2.0;
 
-    for (int it = 0; it < verlet.size(); it++) {
+    for (int it = 0; it < verlet.size(); it++)
+    {
 
         int i = verlet.at(it).at(0);
         int j = verlet.at(it).at(1);
@@ -240,7 +251,8 @@ void calculateForces() {
 }
 
 void calculateExternalForces() {
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         fx[i] += q[i] * 0.5;
     }
 }
@@ -256,16 +268,16 @@ void moveParticles() {
         x[i] += deltax;
         y[i] += deltay;
 
-        x_so_far += deltax;
-        y_so_far += deltay;
+        x_so_far[i] += deltax;
+        y_so_far[i] += deltay;
 
         if (x[i] < 0) x[i] += Sx;
         if (x[i] > Sx) x[i] -= Sx;
         if (y[i] < 0) y[i] += Sy;
         if (y[i] > Sy) y[i] -=Sy;
 
-        if (flag_rebuild_verlet==0)
-         if (x_so_far*x_so_far + y_so_far*y_so_far >= r_travel_max * r_travel_max)
+        if (flag_rebuild_verlet == 0)
+            if (x_so_far[i] * x_so_far[i] + y_so_far[i] * y_so_far[i] >= r_travel_max * r_travel_max)
                 flag_rebuild_verlet = 1;
 
         fx[i] = 0.0;
@@ -312,25 +324,27 @@ int main(int argc, char* argv[]) {
         moviefile = "moviefile.mvi";
     f = fopen(moviefile, "wb");
     total_runtime = 20000;
+    time_echo = 500;
     for (int i = 0; i < total_runtime; i++) 
+    {
+        if (i % time_echo == 0)
         {
-        if (i%time_echo==0)
-        {
-            double perc = (double)i/(double)total_runtime*100;
+            double perc = (double) i / (double) total_runtime * 100;
             cout << i << "/" << total_runtime << " " << perc << "%" << endl;
         }
-        if (flag_rebuild_verlet==1) 
+
+        if (flag_rebuild_verlet == 1) 
         {
             calculateVerletList();
             colorverlet();
         }
+
         calculateForces();
         calculateExternalForces();
         moveParticles();
 
         if (i % 100 == 0)
             write_cmovie(f, i);
-
     }
     freeData();
     return 0;
