@@ -35,10 +35,6 @@ double r_verlet;
 //to potentially destroy the Verlet list
 double r_travel_max;
 
-
-//time
-double dt;
-
 //total runtime
 int total_runtime;
 int time_echo;
