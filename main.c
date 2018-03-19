@@ -3,7 +3,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
-#include <regex.h>
+//#include <regex.h>
 #include "particle.h"
 
 /*(N, number of  particles and also the box size, proportionally! if  you
@@ -15,6 +15,13 @@ int N;                  //number of particles
 double dt;              //length of a single time step
 Particle *particles;    //list of particle
 int t;                  //time
+double r0;              //the cutoff distance
+double rv;              //the verlet cutoff distance
+int N_verlet_list;      //szomszedok szama
+int *vlist1;            //i
+int *vlist2;            //j
+int flag_to_rebuild_verlet; //ha ujra kell epiteni a szomszedsagi listat
+int N_verlet_actual;  //hany szomszed van
 
 //time measuring, how much the simulation ran
 time_t time_begin;
@@ -24,6 +31,26 @@ time_t time_end;
 FILE *statistics_file;
 FILE *moviefile;
 
+//alapbeallitasok
+void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff) {
+    N = nrParticles;
+    sX = sY = systemSize;
+    sX2 = sY2 = systemSize / 2;
+    dt = timeStep;
+    r0 = cutOff;
+    rv = verletCutOff;
+    N_verlet_list = N*N;
+    vlist1 = (int *) malloc(N_verlet_list * sizeof(int));
+    vlist2 = (int *) malloc(N_verlet_list * sizeof(int));
+    if (!vlist1 || !vlist2) {
+        perror("Allocation problem! Verlet list initialization.");
+        exit(EXIT_FAILURE);
+    }
+    flag_to_rebuild_verlet = 0;
+
+}
+
+//ha kilepett a dobozbol, visszarakjuk
 void keepParticleInSystem(double *dx, double *dy) {
     if (*dx > sX2) *dx -= sX;
     if (*dx < -sX2) *dx += sX;
@@ -31,6 +58,7 @@ void keepParticleInSystem(double *dx, double *dy) {
     if (*dy < -sY2) *dy += sY;
 }
 
+//reszecskek helyenek a megkeresese, maradjon a dobozban
 void stowParticle(Coordinate *right_coord, int i) {
     Coordinate tmp;
     double dx, dy, dr;
@@ -44,9 +72,9 @@ void stowParticle(Coordinate *right_coord, int i) {
             dy = tmp.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy); //back to the "box"
             dr = sqrt(dx * dx + dy * dy);
-            if (dr<0.2) { //checking if the position is already taken
+            if (dr < 0.2) { //checking if the position is already taken
                 overlap = 1;
-                break;
+                break; //ha mar egy kozel kerult, a tobbit nem szamoljuk hanem uj koordinatat generalunk neki
             }
         }
     } while (overlap == 1); //regenerate until, the  coordinate is unused
@@ -54,11 +82,8 @@ void stowParticle(Coordinate *right_coord, int i) {
     *right_coord = tmp;
 }
 
-void initParticles(int nrParticles, double systemSize, double timeStep) {
-    N = nrParticles;
-    sX = sY = systemSize;
-    sX2 = sY2 = systemSize / 2;
-    dt = timeStep;
+void initParticles() {
+    init(200, 20.0, 0.002, 4.0,6.0);
     particles = (Particle *) malloc(N * sizeof(Particle));
     if (!particles) {
         perror("Allocation problem!");
@@ -70,29 +95,22 @@ void initParticles(int nrParticles, double systemSize, double timeStep) {
     while (i < N) {
         particles[i].id = i;
         particles[i].color = ((rand() / (RAND_MAX + 1.0)) > 0.5); //color
-        particles[i].q = particles[i].color ? -1.0:1.0;
+        particles[i].q = particles[i].color ? -1.0 : 1.0;
         stowParticle(&position, i);  //particle coordinate
         particles[i].coord.x = position.x;
         particles[i].coord.y = position.y;
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
+        particles[i].drx=0.0;
+        particles[i].dry=0.0;
         i++;
-
     }
-
-    //particles initialized
-    FILE *teszt;
-    teszt=fopen("reszecskek.txt","wt");
-    for(int i=0;i<N;i++)
-        fprintf(teszt,"%lf %lf\n",particles[i].coord.x,particles[i].coord.y);
-    fclose(teszt);
-
 }
 
 void calculateExternalForces() {
     int i;
     for (i = 0; i < N; i++) {
-            particles[i].fx += particles[i].q * 0.5;
+        particles[i].fx += particles[i].q * 0.5;
     }
 }
 
@@ -109,7 +127,9 @@ void calculatePairwiseForces() {
             dr2 = dx * dx + dy * dy;
             dr = sqrt(dr2);
 
-            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr,i,particles[i].coord.x,particles[i].coord.y,j,particles[j].coord.x,particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
+            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr, i,
+                                            particles[i].coord.x, particles[i].coord.y, j, particles[j].coord.x,
+                                            particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
 
             //project it to the axes get the fx, fy components
             fx = f * dx / dr;
@@ -123,6 +143,34 @@ void calculatePairwiseForces() {
 
         }
     }
+}
+
+void buildVerletList(){
+    N_verlet_actual = 0; //szomszedos reszecskek,tulajdonkeppeni verlet lista hossz
+    double dx, dy, dr,dr2;
+
+    for(int i=0;i<N;i++) {
+        for (int j = i+1; j < N; j++) {
+            dx = particles[i].coord.x - particles[j].coord.x;
+            dy = particles[i].coord.y - particles[j].coord.y;
+            keepParticleInSystem(&dx, &dy);
+            dr2 = dx * dx + dy * dy;
+            dr = sqrt(dr2);
+            if (dr2 <= rv) {
+                N_verlet_actual++;
+                if (N_verlet_actual >= N_verlet_list) {
+                    N_verlet_list++;
+                    vlist1 = (int *) realloc(vlist1, N_verlet_list * sizeof(int));
+                    vlist2 = (int *) realloc(vlist2, N_verlet_list * sizeof(int));
+                }
+                vlist1[N_verlet_actual - 1] = i;
+                vlist2[N_verlet_actual - 1] = j;
+            }
+        }
+        particles[i].drx=0.0;
+        particles[i].dry=0.0;
+    }
+    flag_to_rebuild_verlet =0;
 }
 
 void moveParticles() {
@@ -173,8 +221,8 @@ void write_cmovie() {
 void write_statistics() {
     double avg_vx = 0.0;
     for (int i = 0; i < N; i++) {
-        if (particles[i].color==0) avg_vx += particles[i].fx;
-        if (particles[i].color==1) avg_vx -= particles[i].fx;
+        if (particles[i].color == 0) avg_vx += particles[i].fx;
+        if (particles[i].color == 1) avg_vx -= particles[i].fx;
     }
 
     avg_vx = avg_vx / (double) N;
@@ -198,64 +246,69 @@ void end() {
 }
 
 //return 1 if ok,
-int properFilename(char *filename) {
-    regex_t regexCompiled;
-    char const *PATTERN = "[a-zA-Z]+([a-z0-9A-Z_])*";
-    int result;
-    size_t maxMatches = 1; //Is the number of matches allowed.
-    size_t maxGroups = 1;
-    regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
-
-    if (regcomp(&regexCompiled, PATTERN, REG_EXTENDED)) {
-        printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
-        exit(1);
-    }
-
-    //If successful, the regexec() function returns zero to indicate that string matched PATTERN
-    result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
-                                                                          (pmatch[maxGroups - 1].rm_eo ==
-                                                                           strlen(filename))) : 0;
-
-    regfree(&regexCompiled);
-    return result;
-}
+//int properFilename(char *filename) {
+//    regex_t regexCompiled;
+//    char const *PATTERN = "[a-zA-Z]+([a-z0-9A-Z_])*";
+//    int result;
+//    size_t maxMatches = 1; //Is the number of matches allowed.
+//    size_t maxGroups = 1;
+//    regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
+//
+//    if (regcomp(&regexCompiled, PATTERN, REG_EXTENDED)) {
+//        printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
+//        exit(1);
+//    }
+//
+//    //If successful, the regexec() function returns zero to indicate that string matched PATTERN
+//    result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
+//                                                                          (pmatch[maxGroups - 1].rm_eo ==
+//                                                                           strlen(filename))) : 0;
+//
+//    regfree(&regexCompiled);
+//    return result;
+//}
 
 int main(int argc, char *argv[]) {
-    char filename[100] = {0};
-    if (argc > 1) {
-        char *inputParameter = argv[1];
-        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
-                sizeof(filename));
-    } else {
-        strncpy(filename, "result.mvi", sizeof(filename));
-    }
+//    char filename[100] = {0};
+//    if (argc > 1) {
+//        char *inputParameter = argv[1];
+//        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
+//                sizeof(filename));
+//    } else {
+//        strncpy(filename, "result.mvi", sizeof(filename));
+//    }
 
     start();
-    initParticles(200, 20.0, 0.002);
+    initParticles();
 
-    moviefile = fopen(filename, "wb");
+    // moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
-    if (!moviefile || !statistics_file) {
-        fprintf(stderr, "Failed to open file.\n");
-        return 1;
+//    if (!moviefile || !statistics_file) {
+//        fprintf(stderr, "Failed to open file.\n");
+//        return 1;
+//    }
+
+    buildVerletList();
+    for(int i=0;i<N_verlet_actual;i++){
+        printf("kor %d i %d j %d par\n",i,vlist1[i],vlist2[i]);
     }
-    for (t = 0; t < 100000; t++) {
+    /*for (t = 0; t < 1000; t++) {
         calculatePairwiseForces();
         calculateExternalForces();
         write_statistics();
         moveParticles();
         if (t % 100 == 0) {
-            write_cmovie();
+            //   write_cmovie();
         }
         if (t % 500 == 0) {
             printf("time = %d\n", t);
             fflush(stdout);
         }
-    }
+    }*/
     fclose(statistics_file);
-    fclose(moviefile);
+    // fclose(moviefile);
     end();
-    printf("The result(for plot) can be found in file: %s\n", filename);
+    // printf("The result(for plot) can be found in file: %s\n", filename);
     free(particles);
     return 0;
 }

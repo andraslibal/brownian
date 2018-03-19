@@ -12,6 +12,8 @@ struct Particle {
     Coordinate coord;// double x, y;    //x,y coordinate
     double fx, fy;  //fx,fy forces acting on the particle
     double q;       //toltes
+    double drx;
+    double dry;
 };
 
 typedef struct Particle Particle;

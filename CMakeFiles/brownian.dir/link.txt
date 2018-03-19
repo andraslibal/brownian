@@ -1,1 +1,3 @@
-/usr/bin/cc   -rdynamic CMakeFiles/brownian.dir/main.c.o  -o brownian -lm 
+"C:\Program Files\JetBrains\CLion 2017.3.1\bin\cmake\bin\cmake.exe" -E remove -f CMakeFiles\brownian.dir/objects.a
+C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\ar.exe cr CMakeFiles\brownian.dir/objects.a @CMakeFiles\brownian.dir\objects1.rsp
+C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\gcc.exe    -Wl,--whole-archive CMakeFiles\brownian.dir/objects.a -Wl,--no-whole-archive  -o brownian.exe -Wl,--out-implib,libbrownian.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\brownian.dir\linklibs.rsp

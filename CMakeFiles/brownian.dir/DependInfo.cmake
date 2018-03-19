@@ -4,9 +4,9 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/deim1508/Git/brownian/main.c" "/home/deim1508/Git/brownian/CMakeFiles/brownian.dir/main.c.o"
+  "D:/Egyetem/Allamvizsga/brownian/main.c" "D:/Egyetem/Allamvizsga/brownian/CMakeFiles/brownian.dir/main.c.obj"
   )
-set(CMAKE_C_COMPILER_ID "Clang")
+set(CMAKE_C_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_C_TARGET_INCLUDE_PATH
