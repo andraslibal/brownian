@@ -3,7 +3,7 @@
 
 //elore kiszamolt f/r, hogy a reszecskek egymasra hataskor ne kelljen szamolni, csak kiszedni a listabol az erteket
 void tabulateForces() {
-    double x_min = 0.1, x_max = 6.0, x2, x;
+    double x_min = 0.1, x_max = rv, x2, x;
     double f = 0;
 
     tabulate_start = x_min * x_min;
@@ -12,7 +12,7 @@ void tabulateForces() {
     for (int i = 0; i < N_tabulated; i++) {
         x2 = i * tabulate_step + tabulate_start;
         x = sqrt(x2);
-        f = 1 / x2 * exp(-0.25 * x);
+        f = 1 / x2 * exp(-(1/r0) * x);
         tabulated_f_per_r[i] = f / x;
         //printf("kor %d %.2f %.2f %.2f %.8f\n", i, x, x2, f, tabulated_f_per_r[i]);
     }
@@ -31,7 +31,8 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     rvminr02 = (rv - r0) * (rv - r0);
 
     //Verlet list
-    N_verlet_list = N * N;
+    ////N_verlet= (pi*rv^2*N^2)/(2*sX*sY)
+    N_verlet_list = ((int)3.14*(int)rv*(int)rv*N*N)/(2*(int)sX*(int)sY);
     vlist1 = (int *) malloc(N_verlet_list * sizeof(int));
     vlist2 = (int *) malloc(N_verlet_list * sizeof(int));
     if (!vlist1 || !vlist2) {
@@ -84,7 +85,7 @@ void stowParticle(Coordinate *right_coord, int i) {
 }
 
 void initParticles() {
-    init(400, 20.0, 0.002, 4.0, 6.0);
+    init(800, 40.0, 0.002, 4.0, 6.0);
     particles = (Particle *) malloc(N * sizeof(Particle));
     if (!particles) {
         perror("Allocation problem!");
@@ -211,16 +212,23 @@ void buildVerletList() {
                 vlist1[N_verlet_actual - 1] = i;
                 vlist2[N_verlet_actual - 1] = j;
 
-                if(particles[i].q==1.0) particles[i].color = 0;
-                else particles[i].color = 1;
-                if(particles[j].q==1.0) particles[j].color = 0;
-                else particles[j].color = 1;
-                if (i==30) particles[j].color=4;
-                if (j==30) particles[i].color=5;
             }
         }
         particles[i].drx = 0.0;
         particles[i].dry = 0.0;
+    }
+
+    for (int i; i < N; i++) {
+        if (particles[i].q == 1.0) particles[i].color = 0;
+        else particles[i].color = 1;
+    }
+
+    int i, j;
+    for (int k = 0; k < N_verlet_actual; k++) {
+        i = vlist1[k];
+        j = vlist2[k];
+        if (i == 30) particles[j].color = 4;
+        if (j == 30) particles[i].color = 5;
     }
     flag_to_rebuild_verlet = 0;
 }
@@ -338,6 +346,7 @@ int main(int argc, char *argv[]) {
     start();
     initParticles();
     buildVerletList();
+    printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
 
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
