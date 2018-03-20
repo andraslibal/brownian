@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <ios>
 #include <vector>
-#include <string>
+#include <string.h>
 #include <cmath>
 
 #include "random_numrec.c"
@@ -46,7 +46,7 @@ int rebuild_verlet_flag;
 double *x_so_far;
 double *y_so_far;
 
-const char* moviefile;
+char* moviefile;
 
 //time
 double dt = 0.0;
@@ -73,16 +73,18 @@ void stop_timing()
 
 void readDataFromFile(const char* filename)
 {
-    ifstream file(filename);
+    ifstream f(filename);
+    if (f.is_open()) {
+        f >> moviefile;
+        strcat(moviefile, ".mvi");
+        f >> Sx;
+        Sx_2 = Sx / 2;
+        f >> Sy;
+        Sy_2 = Sy / 2;
+        f >> N;
+    }
 
-    file >> moviefile;
-    file >> Sx;
-    Sx_2 = Sx / 2;
-    file >> Sy;
-    Sy_2 = Sy / 2;
-    file >> N;
-
-    file.close();
+    f.close();
 }
 
 void initParticles()
@@ -90,7 +92,7 @@ void initParticles()
     N = 51200;
     ID = new int[N];
 
-    moviefile = new char*[30];
+    moviefile = new char[30];
 
     x = new double[N];
     y = new double[N];
@@ -104,7 +106,7 @@ void initParticles()
     Sx = 320.0;
     Sx_2 = Sx / 2;
     Sy = 320.0;
-    Sy_2 = Sy / 2
+    Sy_2 = Sy / 2;
 
     r0 = 4.0;
     r_verlet = 6.0;
@@ -245,30 +247,6 @@ void colorverlet()
     }
 }
 
-
-void writeToFile(char* filename)
-{
-    ofstream f(filename);
-    cout << filename << endl;
-    f << setw(20) << "ID";
-    f << setw(20) << "X";
-    f << setw(20) << "Y";
-    f << setw(20) << "FX";
-    f << setw(20) << "FY";
-    f << setw(20) << "COLOR";
-    f << setw(20) << "Q" << endl;
-    for(int i = 0; i < N; i++) {
-        f << setw(20) << ID[i];
-        f << setw(20) << x[i];
-        f << setw(20) << y[i];
-        f << setw(20) << fx[i];
-        f << setw(20) << fy[i];
-        f << setw(20) << color[i];
-        f << setw(20) << q[i] << endl;
-    }
-    f.close();
-}
-
 void calculateForces() {
     for (int it = 0; it < verlet.size(); it++)
     {
@@ -334,6 +312,29 @@ void moveParticles()
     }
 }
 
+void writeToFile(char* filename)
+{
+    ofstream f(filename);
+    cout << filename << endl;
+    f << setw(20) << "ID";
+    f << setw(20) << "X";
+    f << setw(20) << "Y";
+    f << setw(20) << "FX";
+    f << setw(20) << "FY";
+    f << setw(20) << "COLOR";
+    f << setw(20) << "Q" << endl;
+    for(int i = 0; i < N; i++) {
+        f << setw(20) << ID[i];
+        f << setw(20) << x[i];
+        f << setw(20) << y[i];
+        f << setw(20) << fx[i];
+        f << setw(20) << fy[i];
+        f << setw(20) << color[i];
+        f << setw(20) << q[i] << endl;
+    }
+    f.close();
+}
+
 void write_cmovie(FILE* moviefile, int t)
 {
     int i;
@@ -367,12 +368,15 @@ int main(int argc, char* argv[])
     printf("Simulating spontaneous lane formation\n");
 
     initParticles();
-    generateCoordinates();
-    const char* moviefile = new char[20];
     FILE* f;
     if (argc == 2) 
-        readDataFromFile(argv[2]);
+        readDataFromFile(argv[1]);
     f = fopen(moviefile, "wb");
+    cout << "Sx = " << Sx << endl;
+    cout << "Sy = " << Sy << endl;
+    cout << "N = " << N << endl;
+    cout << "moviefile: " << moviefile << endl;
+    generateCoordinates();
 
     total_runtime = 20000;
     time_echo = 500;
