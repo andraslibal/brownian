@@ -214,8 +214,6 @@ void calculateVerletList()
     }
     //clear rebuild flag
     rebuild_verlet_flag = 0;
-
-    printf(".");fflush(stdout);
 }
 
 void colorverlet()
