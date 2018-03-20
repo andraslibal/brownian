@@ -41,7 +41,7 @@ int time_echo;
 
 //verlet lists
 vector<vector<int> > verlet;
-int flag_rebuild_verlet;
+int rebuild_verlet_flag;
 double *x_so_far;
 double *y_so_far;
 
@@ -90,7 +90,7 @@ void initParticles()
     r_travel_max = r_verlet - r0;
     dt = 0.01;
 
-    flag_rebuild_verlet = 1;
+    rebuild_verlet_flag = 1;
     x_so_far = new double[N];
     y_so_far = new double[N];
 }
@@ -213,7 +213,7 @@ void calculateVerletList()
         y_so_far[i] = 0.0;
     }
     //clear rebuild flag
-    flag_rebuild_verlet = 0;
+    rebuild_verlet_flag = 0;
 
     printf(".");fflush(stdout);
 }
@@ -316,9 +316,9 @@ void moveParticles()
         if (y[i] > Sy) y[i] -=Sy;
 
         //only check on unset flag
-        if (flag_rebuild_verlet == 0)
+        if (rebuild_verlet_flag == 0)
             if (x_so_far[i] * x_so_far[i] + y_so_far[i] * y_so_far[i] >= r_travel_max * r_travel_max)
-                flag_rebuild_verlet = 1;
+                rebuild_verlet_flag = 1;
 
         fx[i] = 0.0;
         fy[i] = 0.0;
@@ -379,7 +379,7 @@ int main(int argc, char* argv[])
             cout << i << "/" << total_runtime << " " << perc << "%" << endl;
         }
 
-        if (flag_rebuild_verlet == 1) 
+        if (rebuild_verlet_flag == 1) 
         {
             calculateVerletList();
             colorverlet();
@@ -393,6 +393,6 @@ int main(int argc, char* argv[])
             write_cmovie(f, i);
     }
     freeData();
-    start_timing();
+    stop_timing();
     return 0;
 }
