@@ -46,6 +46,13 @@ int rebuild_verlet_flag;
 double *x_so_far;
 double *y_so_far;
 
+//f in each point depending on r
+double * tabulated_force;
+//measure of tabulation
+int N_tabulate;
+double tab_start;
+double tab_measure;
+
 char* moviefile;
 
 //time
@@ -102,6 +109,9 @@ void initParticles()
 
     color =  new int[N];
     q = new double[N];
+
+    N_tabulate = 50000;
+    tabulated_force = new double[N_tabulate];
 
     Sx = 320.0;
     Sx_2 = Sx / 2;
@@ -191,6 +201,20 @@ void generateCoordinates()
     }
 }
 
+void calculateTabulatedForces() 
+{
+    double r = 0.1;
+    double r2 = r * r;
+    tab_measure = (r_verlet * r_verlet - r2) / (N_tabulate - 1.0);
+    tab_start = r;
+    for (int i = 0; i < N_tabulate; i++) {
+        tabulated_force[i] = exp(- r / r0) / r2 * r;
+        r2 += tab_measure;
+        r = sqrt(r2);
+        cout << r << endl;
+    }
+}
+
 void calculateVerletList()
 {
     for (int i = 0; i < verlet.size(); i++)
@@ -247,7 +271,8 @@ void colorverlet()
     }
 }
 
-void calculateForces() {
+void calculateForces()
+{
     for (int it = 0; it < verlet.size(); it++)
     {
 
@@ -263,14 +288,13 @@ void calculateForces() {
         if (diffY > Sy_2) diffY -= Sy;
 
         double distance = diffX * diffX + diffY * diffY;
-        double dist_sqrt = sqrt(distance);
+        int tab_index = (int)floor((distance-tab_start)/(tab_measure));
+        double f = tabulated_force[tab_index];
 
-        double f = exp(- dist_sqrt / r0) / distance;
-
-        fx[i] += f * diffX / dist_sqrt;
-        fy[i] += f * diffY / dist_sqrt;
-        fx[j] -= f * diffX / dist_sqrt;
-        fy[j] -= f * diffY / dist_sqrt;
+        fx[i] += f * diffX;
+        fy[i] += f * diffY;
+        fx[j] -= f * diffX;
+        fy[j] -= f * diffY;
     }
 }
 
@@ -377,6 +401,7 @@ int main(int argc, char* argv[])
     cout << "N = " << N << endl;
     cout << "moviefile: " << moviefile << endl;
     generateCoordinates();
+    calculateTabulatedForces();
 
     total_runtime = 20000;
     time_echo = 500;
