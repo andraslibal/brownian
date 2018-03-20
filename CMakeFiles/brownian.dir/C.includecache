@@ -1,4 +1,4 @@
-#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
 
 #IncludeRegexScan: ^.*$
 
@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-D:/Egyetem/Allamvizsga/brownian/main.c
+/home/deim1508/Documents/brownian/data.h
 stdio.h
 -
 stdlib.h
@@ -17,10 +17,18 @@ math.h
 -
 string.h
 -
-particle.h
-D:/Egyetem/Allamvizsga/brownian/particle.h
+regex.h
+-
+stdio.h
+-
 
-D:/Egyetem/Allamvizsga/brownian/particle.h
+/home/deim1508/Documents/brownian/main.c
+particle.h
+/home/deim1508/Documents/brownian/particle.h
+data.h
+/home/deim1508/Documents/brownian/data.h
+
+/home/deim1508/Documents/brownian/particle.h
 stdio.h
 -
 

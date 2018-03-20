@@ -1,9 +1,7 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/brownian.dir/main.c.obj"
+  "CMakeFiles/brownian.dir/main.c.o"
   "brownian.pdb"
-  "brownian.exe"
-  "brownian.exe.manifest"
-  "libbrownian.dll.a"
+  "brownian"
 )
 
 # Per-language clean rules from dependency scanning.

@@ -1,3 +1,1 @@
-D:/Egyetem/Allamvizsga/brownian/CMakeFiles/rebuild_cache.dir
-D:/Egyetem/Allamvizsga/brownian/CMakeFiles/brownian.dir
-D:/Egyetem/Allamvizsga/brownian/CMakeFiles/edit_cache.dir
+/home/deim1508/Documents/brownian/CMakeFiles/brownian.dir

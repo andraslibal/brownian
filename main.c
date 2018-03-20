@@ -1,35 +1,22 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include <string.h>
-//#include <regex.h>
 #include "particle.h"
+#include "data.h"
 
-/*(N, number of  particles and also the box size, proportionally! if  you
-increase the box to be 2x as big in x and y direction N has to be 4x as much to have
-the same density*/
-double sX, sY;          //system size x,y direction
-double sX2, sY2;        //half of the system size
-int N;                  //number of particles
-double dt;              //length of a single time step
-Particle *particles;    //list of particle
-int t;                  //time
-double r0;              //the cutoff distance
-double rv;              //the verlet cutoff distance
-int N_verlet_list;      //szomszedok szama
-int *vlist1;            //i
-int *vlist2;            //j
-int flag_to_rebuild_verlet; //ha ujra kell epiteni a szomszedsagi listat
-int N_verlet_actual;  //hany szomszed van
+//elore kiszamolt f/r, hogy a reszecskek egymasra hataskor ne kelljen szamolni, csak kiszedni a listabol az erteket
+void tabulateForces() {
+    double x_min = 0.1, x_max = 6.0, x2, x;
+    double f = 0;
 
-//time measuring, how much the simulation ran
-time_t time_begin;
-time_t time_end;
+    tabulate_start = x_min * x_min;
+    tabulate_step = (x_max * x_max - x_min * x_min) / (N_tabulated - 1.0);
 
-//statistic file, file with coordinates of the  particles
-FILE *statistics_file;
-FILE *moviefile;
+    for (int i = 0; i < N_tabulated; i++) {
+        x2 = i * tabulate_step + tabulate_start;
+        x = sqrt(x2);
+        f = 1 / x2 * exp(-0.25 * x);
+        tabulated_f_per_r[i] = f / x;
+        //printf("kor %d %.2f %.2f %.2f %.8f\n", i, x, x2, f, tabulated_f_per_r[i]);
+    }
+}
 
 //alapbeallitasok
 void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff) {
@@ -37,16 +24,30 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     sX = sY = systemSize;
     sX2 = sY2 = systemSize / 2;
     dt = timeStep;
+
+    //Cutoff distance
     r0 = cutOff;
     rv = verletCutOff;
-    N_verlet_list = N*N;
+    rvminr02 = (rv - r0) * (rv - r0);
+
+    //Verlet list
+    N_verlet_list = N * N;
     vlist1 = (int *) malloc(N_verlet_list * sizeof(int));
     vlist2 = (int *) malloc(N_verlet_list * sizeof(int));
     if (!vlist1 || !vlist2) {
-        perror("Allocation problem! Verlet list initialization.");
+        perror("Allocation problem! Verlet list.");
         exit(EXIT_FAILURE);
     }
     flag_to_rebuild_verlet = 0;
+
+    //Tabulated force
+    N_tabulated = 50000;
+    tabulated_f_per_r = (double *) malloc(N_tabulated * sizeof(double));
+    if (!tabulated_f_per_r) {
+        perror("Allocation problem! Tabulated force(f/r) list.");
+        exit(EXIT_FAILURE);
+    }
+    tabulateForces();
 
 }
 
@@ -83,7 +84,7 @@ void stowParticle(Coordinate *right_coord, int i) {
 }
 
 void initParticles() {
-    init(200, 20.0, 0.002, 4.0,6.0);
+    init(400, 20.0, 0.002, 4.0, 6.0);
     particles = (Particle *) malloc(N * sizeof(Particle));
     if (!particles) {
         perror("Allocation problem!");
@@ -101,8 +102,8 @@ void initParticles() {
         particles[i].coord.y = position.y;
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
-        particles[i].drx=0.0;
-        particles[i].dry=0.0;
+        particles[i].drx = 0.0;
+        particles[i].dry = 0.0;
         i++;
     }
 }
@@ -118,6 +119,7 @@ void calculatePairwiseForces() {
     int i, j;
     double dx, dy, dr, dr2;
     double f, fx, fy;
+    int tabulatedForceIndex;
 
     for (i = 0; i < N - 1; i++) {
         for (j = i + 1; j < N; j++) {
@@ -125,15 +127,26 @@ void calculatePairwiseForces() {
             dy = particles[i].coord.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy);
             dr2 = dx * dx + dy * dy;
-            dr = sqrt(dr2);
 
-            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr, i,
-                                            particles[i].coord.x, particles[i].coord.y, j, particles[j].coord.x,
-                                            particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
+            tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
+            if (tabulatedForceIndex >= N_tabulated) {
+                fx = 0.0;
+                fy = 0.0;
+            } else {
+                fx = tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
+                fy = tabulated_f_per_r[tabulatedForceIndex] * dy;
+            }
 
-            //project it to the axes get the fx, fy components
-            fx = f * dx / dr;
-            fy = f * dy / dr;
+            ////ha igy szamoljuk az erot, az koltseges ezert inkabb a tabulated force listabol vesszuk ki
+//            dr = sqrt(dr2);
+//
+//            (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr, i,
+//                                            particles[i].coord.x, particles[i].coord.y, j, particles[j].coord.x,
+//                                            particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
+//
+//            //project it to the axes get the fx, fy components
+//            fx = f * dx / dr;
+//            fy = f * dy / dr;
 
             particles[i].fx += fx;
             particles[i].fy += fy;
@@ -145,18 +158,50 @@ void calculatePairwiseForces() {
     }
 }
 
-void buildVerletList(){
-    N_verlet_actual = 0; //szomszedos reszecskek,tulajdonkeppeni verlet lista hossz
-    double dx, dy, dr,dr2;
+void calculatePairwiseForcesWithVerlet() {
+    int i, j;
+    double dx, dy, dr2;
+    double fx, fy;
+    int tabulatedForceIndex;
 
-    for(int i=0;i<N;i++) {
-        for (int j = i+1; j < N; j++) {
+    for (int k = 0; k < N_verlet_actual; k++) {
+        i = vlist1[k];
+        j = vlist2[k];
+        dx = particles[i].coord.x - particles[j].coord.x;
+        dy = particles[i].coord.y - particles[j].coord.y;
+        keepParticleInSystem(&dx, &dy);
+        dr2 = dx * dx + dy * dy;
+        tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
+        if (tabulatedForceIndex >= N_tabulated) {
+            fx = 0.0;
+            fy = 0.0;
+        } else {
+            fx = tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
+            fy = tabulated_f_per_r[tabulatedForceIndex] * dy;
+        }
+
+        particles[i].fx += fx;
+        particles[i].fy += fy;
+
+        particles[j].fx -= fx;
+        particles[j].fy -= fy;
+
+    }
+}
+
+void buildVerletList() {
+    //printf("Build verlet %d idopillanatban\n",t);
+    N_verlet_actual = 0; //szomszedos reszecskek szama,verlet lista hossz
+    double dx, dy, dr, dr2;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
             dx = particles[i].coord.x - particles[j].coord.x;
             dy = particles[i].coord.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy);
             dr2 = dx * dx + dy * dy;
             dr = sqrt(dr2);
-            if (dr2 <= rv) {
+            if (dr <= rv) {
                 N_verlet_actual++;
                 if (N_verlet_actual >= N_verlet_list) {
                     N_verlet_list++;
@@ -165,27 +210,39 @@ void buildVerletList(){
                 }
                 vlist1[N_verlet_actual - 1] = i;
                 vlist2[N_verlet_actual - 1] = j;
+
+                if(particles[i].q==1.0) particles[i].color = 0;
+                else particles[i].color = 1;
+                if(particles[j].q==1.0) particles[j].color = 0;
+                else particles[j].color = 1;
+                if (i==30) particles[j].color=4;
+                if (j==30) particles[i].color=5;
             }
         }
-        particles[i].drx=0.0;
-        particles[i].dry=0.0;
+        particles[i].drx = 0.0;
+        particles[i].dry = 0.0;
     }
-    flag_to_rebuild_verlet =0;
+    flag_to_rebuild_verlet = 0;
 }
 
 void moveParticles() {
     double dx, dy;
+
     for (int i = 0; i < N; i++) {
         dx = particles[i].fx * dt;
         dy = particles[i].fy * dt;
         particles[i].coord.x += dx;
         particles[i].coord.y += dy;
+        particles[i].drx += dx;
+        particles[i].dry += dy;
         //out of box
         if (particles[i].coord.x < 0) particles[i].coord.x += sX;
         if (particles[i].coord.y < 0) particles[i].coord.y += sY;
         if (particles[i].coord.x > sX) particles[i].coord.x -= sX;
         if (particles[i].coord.y > sY) particles[i].coord.y -= sY;
 
+        if ((particles[i].drx * particles[i].drx + particles[i].dry * particles[i].dry) >= rvminr02)
+            flag_to_rebuild_verlet = 1;
         particles[i].fx = 0.0;
         particles[i].fy = 0.0;
     }
@@ -246,69 +303,69 @@ void end() {
 }
 
 //return 1 if ok,
-//int properFilename(char *filename) {
-//    regex_t regexCompiled;
-//    char const *PATTERN = "[a-zA-Z]+([a-z0-9A-Z_])*";
-//    int result;
-//    size_t maxMatches = 1; //Is the number of matches allowed.
-//    size_t maxGroups = 1;
-//    regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
-//
-//    if (regcomp(&regexCompiled, PATTERN, REG_EXTENDED)) {
-//        printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
-//        exit(1);
-//    }
-//
-//    //If successful, the regexec() function returns zero to indicate that string matched PATTERN
-//    result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
-//                                                                          (pmatch[maxGroups - 1].rm_eo ==
-//                                                                           strlen(filename))) : 0;
-//
-//    regfree(&regexCompiled);
-//    return result;
-//}
+int properFilename(char *filename) {
+    regex_t regexCompiled;
+    char const *PATTERN = "[a-zA-Z]+([a-z0-9A-Z_])*";
+    int result;
+    size_t maxMatches = 1; //Is the number of matches allowed.
+    size_t maxGroups = 1;
+    regmatch_t pmatch[maxGroups]; //When maxMatches is non-zero, points to an array with at least maxMatches elements.
+
+    if (regcomp(&regexCompiled, PATTERN, REG_EXTENDED)) {
+        printf("Could not compile regular expression. regcomp() failed, returning nonzero\n");
+        exit(1);
+    }
+
+    //If successful, the regexec() function returns zero to indicate that string matched PATTERN
+    result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
+                                                                          (pmatch[maxGroups - 1].rm_eo ==
+                                                                           strlen(filename))) : 0;
+
+    regfree(&regexCompiled);
+    return result;
+}
 
 int main(int argc, char *argv[]) {
-//    char filename[100] = {0};
-//    if (argc > 1) {
-//        char *inputParameter = argv[1];
-//        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
-//                sizeof(filename));
-//    } else {
-//        strncpy(filename, "result.mvi", sizeof(filename));
-//    }
+    char filename[100] = {0};
+    if (argc > 1) {
+        char *inputParameter = argv[1];
+        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
+                sizeof(filename));
+    } else {
+        strncpy(filename, "result.mvi", sizeof(filename));
+    }
 
     start();
     initParticles();
-
-    // moviefile = fopen(filename, "wb");
-    statistics_file = fopen("statistics.txt", "wt");
-//    if (!moviefile || !statistics_file) {
-//        fprintf(stderr, "Failed to open file.\n");
-//        return 1;
-//    }
-
     buildVerletList();
-    for(int i=0;i<N_verlet_actual;i++){
-        printf("kor %d i %d j %d par\n",i,vlist1[i],vlist2[i]);
+
+    moviefile = fopen(filename, "wb");
+    statistics_file = fopen("statistics.txt", "wt");
+    if (!moviefile || !statistics_file) {
+        fprintf(stderr, "Failed to open file.\n");
+        return 1;
     }
-    /*for (t = 0; t < 1000; t++) {
-        calculatePairwiseForces();
+
+    for (t = 0; t < 100000; t++) {
+        calculatePairwiseForcesWithVerlet();
+//        calculatePairwiseForces();
         calculateExternalForces();
         write_statistics();
         moveParticles();
+        if (flag_to_rebuild_verlet) buildVerletList();
+
         if (t % 100 == 0) {
-            //   write_cmovie();
+            write_cmovie();
         }
         if (t % 500 == 0) {
             printf("time = %d\n", t);
             fflush(stdout);
         }
-    }*/
+    }
     fclose(statistics_file);
-    // fclose(moviefile);
+    fclose(moviefile);
     end();
-    // printf("The result(for plot) can be found in file: %s\n", filename);
+    printf("The result(for plot) can be found in file: %s\n", filename);
     free(particles);
     return 0;
 }
