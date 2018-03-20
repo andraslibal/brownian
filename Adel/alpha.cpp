@@ -27,6 +27,7 @@ int *color = NULL;
 double *q = NULL;
 // system size
 double Sx, Sy;
+double Sx_2, Sy_2;
 // distance cutoff for the interaction 
 double r0;
 // distance cutoff for the Verlet list 
@@ -44,6 +45,8 @@ vector<vector<int> > verlet;
 int rebuild_verlet_flag;
 double *x_so_far;
 double *y_so_far;
+
+const char* moviefile;
 
 //time
 double dt = 0.0;
@@ -68,10 +71,26 @@ void stop_timing()
     cout << "Program running time was " << difference << " seconds" << endl;
 }
 
+void readDataFromFile(const char* filename)
+{
+    ifstream file(filename);
+
+    file >> moviefile;
+    file >> Sx;
+    Sx_2 = Sx / 2;
+    file >> Sy;
+    Sy_2 = Sy / 2;
+    file >> N;
+
+    file.close();
+}
+
 void initParticles()
 {
-    N = 6400;
+    N = 51200;
     ID = new int[N];
+
+    moviefile = new char*[30];
 
     x = new double[N];
     y = new double[N];
@@ -82,8 +101,10 @@ void initParticles()
     color =  new int[N];
     q = new double[N];
 
-    Sx = 80.0;
-    Sy = 80.0;
+    Sx = 320.0;
+    Sx_2 = Sx / 2;
+    Sy = 320.0;
+    Sy_2 = Sy / 2
 
     r0 = 4.0;
     r_verlet = 6.0;
@@ -110,9 +131,6 @@ void freeData()
 
 void generateCoordinates()
 {
-    double Sx_2 = Sx / 2.0;
-    double Sy_2 = Sy / 2.0;
-
     for (int i = 0; i < N; i++)
     {
         ID[i] = i;
@@ -173,10 +191,6 @@ void generateCoordinates()
 
 void calculateVerletList()
 {
-
-    double Sx_2 = Sx / 2.0;
-    double Sy_2 = Sy / 2.0;
-
     for (int i = 0; i < verlet.size(); i++)
         verlet.at(i).clear();
     verlet.clear();
@@ -256,9 +270,6 @@ void writeToFile(char* filename)
 }
 
 void calculateForces() {
-    double Sx_2 = Sx / 2.0;
-    double Sy_2 = Sy / 2.0;
-
     for (int it = 0; it < verlet.size(); it++)
     {
 
@@ -348,7 +359,6 @@ void write_cmovie(FILE* moviefile, int t)
         floatholder = 1.0;//cum_disp, cmovie format
         fwrite(&floatholder,sizeof(float),1,moviefile);
     }
-    
 }
 
 int main(int argc, char* argv[]) 
@@ -361,9 +371,7 @@ int main(int argc, char* argv[])
     const char* moviefile = new char[20];
     FILE* f;
     if (argc == 2) 
-        moviefile = argv[1];
-    else
-        moviefile = "moviefile.mvi";
+        readDataFromFile(argv[2]);
     f = fopen(moviefile, "wb");
 
     total_runtime = 20000;
