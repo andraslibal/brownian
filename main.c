@@ -85,7 +85,7 @@ void stowParticle(Coordinate *right_coord, int i) {
 }
 
 void initParticles() {
-    init(800, 40.0, 0.002, 4.0, 6.0);
+    init(3200, 80.0, 0.002, 4.0, 6.0);
     particles = (Particle *) malloc(N * sizeof(Particle));
     if (!particles) {
         perror("Allocation problem!");
@@ -128,7 +128,7 @@ void calculatePairwiseForces() {
             dy = particles[i].coord.y - particles[j].coord.y;
             keepParticleInSystem(&dx, &dy);
             dr2 = dx * dx + dy * dy;
-
+//
             tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
             if (tabulatedForceIndex >= N_tabulated) {
                 fx = 0.0;
@@ -161,8 +161,8 @@ void calculatePairwiseForces() {
 
 void calculatePairwiseForcesWithVerlet() {
     int i, j;
-    double dx, dy, dr2;
-    double fx, fy;
+    double dx, dy,dr, dr2;
+    double fx, fy,f;
     int tabulatedForceIndex;
 
     for (int k = 0; k < N_verlet_actual; k++) {
@@ -172,14 +172,25 @@ void calculatePairwiseForcesWithVerlet() {
         dy = particles[i].coord.y - particles[j].coord.y;
         keepParticleInSystem(&dx, &dy);
         dr2 = dx * dx + dy * dy;
-        tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
-        if (tabulatedForceIndex >= N_tabulated) {
-            fx = 0.0;
-            fy = 0.0;
-        } else {
-            fx = tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
-            fy = tabulated_f_per_r[tabulatedForceIndex] * dy;
-        }
+        ////tabulalt
+//        tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
+//        if (tabulatedForceIndex >= N_tabulated) {
+//            fx = 0.0;
+//            fy = 0.0;
+//        } else {
+//            fx = tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
+//            fy = tabulated_f_per_r[tabulatedForceIndex] * dy;
+//        }
+
+        dr = sqrt(dr2);
+
+        (dr < 0.2) ? (f = 100.0, printf("Warning!!!dr%f particles %d(%lf %lf) %d(%lf %lf)\n", dr, i,
+                                        particles[i].coord.x, particles[i].coord.y, j, particles[j].coord.x,
+                                        particles[j].coord.y)) : (f = 1 / dr2 * exp(-0.25 * dr));
+
+        //project it to the axes get the fx, fy components
+        fx = f * dx / dr;
+        fy = f * dy / dr;
 
         particles[i].fx += fx;
         particles[i].fy += fy;
@@ -218,18 +229,19 @@ void buildVerletList() {
         particles[i].dry = 0.0;
     }
 
-    for (int i; i < N; i++) {
-        if (particles[i].q == 1.0) particles[i].color = 0;
-        else particles[i].color = 1;
-    }
-
-    int i, j;
-    for (int k = 0; k < N_verlet_actual; k++) {
-        i = vlist1[k];
-        j = vlist2[k];
-        if (i == 30) particles[j].color = 4;
-        if (j == 30) particles[i].color = 5;
-    }
+    ////ez csak azert kellett hogy lassam hogy szinezi
+//    for (int i; i < N; i++) {
+//        if (particles[i].q == 1.0) particles[i].color = 0;
+//        else particles[i].color = 1;
+//    }
+//
+//    int i, j;
+//    for (int k = 0; k < N_verlet_actual; k++) {
+//        i = vlist1[k];
+//        j = vlist2[k];
+//        if (i == 30) particles[j].color = 4;
+//        if (j == 30) particles[i].color = 5;
+//    }
     flag_to_rebuild_verlet = 0;
 }
 
@@ -346,7 +358,7 @@ int main(int argc, char *argv[]) {
     start();
     initParticles();
     buildVerletList();
-    printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
+   // printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
 
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");

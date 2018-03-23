@@ -1,4 +1,4 @@
-# Install script for directory: /home/deim1508/Documents/brownian
+# Install script for directory: /home/rebeka/Documents/brownian
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/deim1508/Documents/brownian/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/rebeka/Documents/brownian/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
