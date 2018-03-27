@@ -47,11 +47,19 @@ double *x_so_far;
 double *y_so_far;
 
 //f in each point depending on r
-double * tabulated_force;
+double *tabulated_force;
 //measure of tabulation
 int N_tabulate;
 double tab_start;
 double tab_measure;
+
+// number of pinning sites
+int N_pinning_sites;
+double r_pinning_site;
+double f_max_pinning_sites;
+// coordinates of pinning sites
+double *x_pinning_site;
+double *y_pinning_site;
 
 char* moviefile;
 
@@ -126,6 +134,12 @@ void initParticles()
     rebuild_verlet_flag = 1;
     x_so_far = new double[N];
     y_so_far = new double[N];
+
+    N_pinning_sites = 2000;
+    r_pinning_site = 2.0;
+    f_max_pinning_sites = 2.0;
+    x_pinning_site = new double[N_pinning_sites];
+    y_pinning_site = new double[N_pinning_sites];
 }
 
 void freeData()
@@ -170,7 +184,7 @@ void generateCoordinates()
                                             // be bigger then 0.2
                     break;
             }
-        // if a managed to iterate over the whole bunch of particles which have their 
+        // if it managed to iterate over the whole bunch of particles which have their 
         // position that means there wasn't any overlap so the new particle's coordinates
         // are alright 
         // ------
@@ -201,6 +215,46 @@ void generateCoordinates()
     }
 }
 
+void initPinningSites()
+{
+	for (int i = 0; i < N_pinning_sites; i++)
+	{
+		int j;
+        double tmpX;
+        double tmpY;
+        do {
+            // choose a random position in the system for the pinning site
+            tmpX = Sx * Rand();
+            tmpY = Sy * Rand();
+            // checking if in this position there already is an element
+            for (j = 0; j < i; j++)
+            {
+                double diffX = x[j] - tmpX;
+                double diffY = y[j] - tmpY;
+
+                if (diffX > Sx_2) diffX -= Sx;
+                if (diffX < -Sx_2) diffX += Sx;
+                if (diffX > Sy_2) diffX -= Sy;
+                if (diffX < -Sy_2) diffX += Sy;
+
+                double diffSquare = diffX * diffX + diffY * diffY;
+                if (diffSquare < 2.2 * 2.2) // the distance between two particles has to 
+                                            // be bigger then 2.2
+                    break;
+            }
+        // if it managed to iterate over the whole bunch of particles which have their 
+        // position that means there wasn't any overlap so the new particle's coordinates
+        // are alright 
+        // ------
+        // ELSE the new element has overlap with one element from the system hence is 
+        // needed to regenerate them
+        } while (j != i);
+
+        x_pinning_site[i] = tmpX;
+        y_pinning_site[i] = tmpY;
+	}
+}
+
 void calculateTabulatedForces() 
 {
     double r = 0.1;
@@ -217,10 +271,12 @@ void calculateTabulatedForces()
 
 void calculateVerletList()
 {
+	// clearing previous data from verlet list
     for (int i = 0; i < verlet.size(); i++)
         verlet.at(i).clear();
     verlet.clear();
 
+    // iterating through the particles
     for (int i = 0; i < N; i++)
     {
         for (int j = i + 1; j < N; j++)
@@ -235,6 +291,8 @@ void calculateVerletList()
 
             double distance = diffX * diffX + diffY * diffY;
 
+            // if they are closer than a specified value, that means that they are in interaction so I put the in the verlet list
+            // one pair will be just once in that list
             if (distance < r_verlet * r_verlet)
             {
                 vector<int> v;
@@ -252,11 +310,12 @@ void calculateVerletList()
         x_so_far[i] = 0.0;
         y_so_far[i] = 0.0;
     }
+
     //clear rebuild flag
     rebuild_verlet_flag = 0;
 }
 
-void colorverlet()
+void colorVerlet()
 {
     for(int i = 0; i < N; i++)
     {
@@ -304,6 +363,31 @@ void calculateExternalForces()
     {
         fx[i] += q[i] * 0.5;
     }
+}
+
+void calculatePinningSitesForce() 
+{
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N_pinning_sites; j++)
+		{
+			double diffX = x[i] - x_pinning_site[j];
+			double diffY = y[i] - y_pinning_site[j];
+
+			if (diffX < -Sx_2) diffX += Sx;
+	        if (diffX > Sx_2) diffX -=Sx;
+	        if (diffY < -Sy_2) diffY += Sy;
+	        if (diffY > Sy_2) diffY -= Sy;
+
+        	double distance = diffX * diffX + diffY * diffY;
+        	if (distance < r_pinning_site * r_pinning_site)
+        	{
+        		double f = f_max_pinning_sites / r_pinning_site;
+        		fx[i] += -f * diffX;
+        		fy[i] += -f * diffY;
+        	}
+		}
+	}
 }
 
 void moveParticles()
@@ -388,19 +472,22 @@ void write_cmovie(FILE* moviefile, int t)
 
 int main(int argc, char* argv[]) 
 {
-    printf("Generic BD simulation\n");
-    printf("Simulating spontaneous lane formation\n");
+    cout << "Generic BD simulation" << endl;
+    cout << "Simulating spontaneous lane formation" << endl;
 
     initParticles();
     FILE* f;
     if (argc == 2) 
         readDataFromFile(argv[1]);
+
     f = fopen(moviefile, "wb");
     cout << "Sx = " << Sx << endl;
     cout << "Sy = " << Sy << endl;
     cout << "N = " << N << endl;
     cout << "moviefile: " << moviefile << endl;
+
     generateCoordinates();
+    initPinningSites();
     calculateTabulatedForces();
 
     total_runtime = 20000;
@@ -417,11 +504,12 @@ int main(int argc, char* argv[])
         if (rebuild_verlet_flag == 1) 
         {
             calculateVerletList();
-            colorverlet();
+            colorVerlet();
         }
 
         calculateForces();
         calculateExternalForces();
+        calculatePinningSitesForce();
         moveParticles();
 
         if (i % 100 == 0)
