@@ -1,1 +1,1 @@
-/usr/bin/cc   -rdynamic CMakeFiles/brownian.dir/main.c.o  -o brownian -lm 
+/usr/bin/cc     CMakeFiles/brownian.dir/main.c.o  -o brownian -rdynamic -lm 

@@ -17,25 +17,21 @@ void tabulateForces() {
     }
 }
 
-//alapbeallitasok
-void init(int nrParticles, double systemSize, int nrPinnings, double timeStep, double cutOff, double verletCutOff) {
+//alapbeallitasok, Particle,system,verlet,tabulated force
+void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff) {
     N = nrParticles;
     particles = (Particle *) malloc(N * sizeof(Particle));
     if (!particles) {
         perror("Allocation problem! Particles");
         exit(EXIT_FAILURE);
     }
-    sX = sY = systemSize;
-    sX2 = sY2 = systemSize / 2;
+    // sX = sY = systemSize;
+    //  sX2 = sY2 = systemSize / 2;
+    sX = pinningNX * pinningDistX;
+    sY = pinningNY * pinningDistY;
+    sX2 = sX / 2;
+    sY2 = sY / 2;
     dt = timeStep;
-
-    //Pinnings
-    N_pinning = nrPinnings;
-    pinnings = (Pinning *) malloc(N * sizeof(Pinning));
-    if (!pinnings) {
-        perror("Allocation problem! PinningSites");
-        exit(EXIT_FAILURE);
-    }
 
     //Cutoff distance
     r0 = cutOff;
@@ -63,6 +59,26 @@ void init(int nrParticles, double systemSize, int nrPinnings, double timeStep, d
     tabulateForces();
     printf("Init done!\n");
 
+}
+
+void
+initPinning(int nrX, int nrY, double distX, double distY, double lx2, double ly2, double fmax, double middleHeight) {
+    //Pinnings
+    N_pinning = nrX * nrY / 2;
+    pinnings = (Pinning *) malloc(N * sizeof(Pinning));
+    if (!pinnings) {
+        perror("Allocation problem! PinningSites");
+        exit(EXIT_FAILURE);
+    }
+
+    pinningNX = nrX;
+    pinningNY = nrY;
+    pinningDistX = distX;
+    pinningDistY = distY;
+    pinningLx2 = lx2;
+    pinningLy2 = ly2;
+    pinningFMax = fmax;
+    pinningMiddleHeight = middleHeight;
 }
 
 //ha kilepett a dobozbol, visszarakjuk
@@ -113,6 +129,7 @@ void initParticles() {
         particles[i].fy = 0.0;
         particles[i].drx = 0.0;
         particles[i].dry = 0.0;
+        particles[i].pinningSiteId = 0;
         i++;
     }
     printf("Init particles done!\n");
@@ -144,19 +161,39 @@ void stowPinning(Coordinate *right_coord, int i) {
 }
 
 void initPinningSites() {
-    int i = 0;
-    Coordinate position;
+    int k = 0;
 
-    while (i < N_pinning) {
+    for (int i = 0; i < pinningNX; i++)
+        for (int j = 0; j < pinningNY; j++) {
+            //horizontal
+            pinnings[k].id = k;
+            pinnings[k].coord.x = (i + 0.5) * pinningDistX;
+            pinnings[k].coord.y = (j) * pinningDistY;
+            pinnings[k].lx = pinningLx2;
+            pinnings[k].ly = pinningLy2;
+            pinnings[k].sinfi = 0.0;
+            pinnings[k].cosfi = 1.0;
+            pinnings[k].middleHeight = pinningMiddleHeight;
+            pinnings[k].fMax = pinningFMax;
+            pinnings[k].particlesId = 0;
+            pinnings[k].r = 0.0;
 
-        pinnings[i].id = i;
-        stowPinning(&position, i);  //pinning coordinate
-        pinnings[i].coord.x = position.x;
-        pinnings[i].coord.y = position.y;
-        pinnings[i].r = 1.0; //radius
-        pinnings[i].f_max = 2.0;
-        i++;
-    }
+            //vertical
+            k++;
+            pinnings[k].id = k;
+            pinnings[k].coord.x = (i) * pinningDistX;
+            pinnings[k].coord.y = (j + 0.5) * pinningDistY;
+            pinnings[k].lx = pinningLx2;
+            pinnings[k].ly = pinningLy2;
+            pinnings[k].sinfi = 1.0;
+            pinnings[k].cosfi = 0.0;
+            pinnings[k].middleHeight = pinningMiddleHeight;
+            pinnings[k].fMax = pinningFMax;
+            pinnings[k].particlesId = 0;
+            pinnings[k].r = 0.0;
+            k++;
+        }
+
     printf("Init pinnings done!\n");
 }
 
@@ -170,7 +207,7 @@ void calculatePinningForces() {
             keepParticleInSystem(&dx, &dy);
             dr2 = dx * dx + dy * dy;
             if (dr2 < (pinnings[j].r * pinnings[j].r)) {
-                f = 1.0 / pinnings[j].r * pinnings[j].f_max;
+                f = 1.0 / pinnings[j].r * pinnings[j].fMax;
                 fx = -f * dx;
                 fy = -f * dy;
 
@@ -183,7 +220,7 @@ void calculatePinningForces() {
 void calculateExternalForces() {
     int i;
     for (i = 0; i < N; i++) {
-        particles[i].fx += (double)t/10000* 5.0;
+        particles[i].fx += (double) t / 10000 * 5.0;
     }
 }
 
@@ -262,7 +299,7 @@ void calculatePairwiseForcesWithVerlet() {
 }
 
 void buildVerletList() {
-    //printf("Build verlet %d idopillanatban\n",t);
+    printf("Build verlet %d idopillanatban\n", t);
     N_verlet_actual = 0; //szomszedos reszecskek szama,verlet lista hossz
     double dx, dy, dr, dr2;
 
@@ -294,13 +331,6 @@ void buildVerletList() {
         else particles[i].color = 1;
     }
 
-    int i, j;
-    for (int k = 0; k < N_verlet_actual; k++) {
-        i = vlist1[k];
-        j = vlist2[k];
-        if (i == 30) particles[j].color = 4;
-        if (j == 30) particles[i].color = 5;
-    }
     flag_to_rebuild_verlet = 0;
 }
 
@@ -355,20 +385,19 @@ void write_cmovie() {
 }
 
 void write_contour_file() {
-    int i;
+    printf("N_pinning %d, sX %.2f, sY %.2f\n", N_pinning, sX, sY);
     FILE *f;
 
     f = fopen("contour.txt", "wt");
 
-    fprintf(f, "%d\n", N_pinning);
+    fprintf(f, "N_pinning %d, sX %.2f, sY %.2f\n", N_pinning, sX, sY);
 
-
-    for (i = 0; i < N_pinning; i++) {
+    for (int i = 0; i < N_pinning; i++) {
         fprintf(f, "%e\n", pinnings[i].coord.x);
         fprintf(f, "%e\n", pinnings[i].coord.y);
-        fprintf(f, "%e\n", pinnings[i].r);
-        fprintf(f, "%e\n", pinnings[i].r);
-        fprintf(f, "%e\n", pinnings[i].r);
+        fprintf(f, "%e\n", pinnings[i].middleHeight);
+        fprintf(f, "%e\n", pinnings[i].lx);
+        fprintf(f, "%e\n", pinnings[i].cosfi);
     }
     fclose(f);
 }
@@ -435,48 +464,57 @@ int main(int argc, char *argv[]) {
         strncpy(filename, "result.mvi", sizeof(filename));
     }
 
-    start();
-    ///inicializalas: N, sX+sY, N_pinning, dt, r, rv
-    init(800, 40.0, 200, 0.002, 4.0, 6.0);
+    //start();
+    ///init:Nx,Ny,distX,distY,lx2,ly2,fmax,middleHeight
+    initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 3000, 0.15);
+    ///inicializalas: N, sX+sY, dt, r, rv
+    init(200, 40.0, 0.002, 4.0, 6.0);
 
-    initParticles();
     initPinningSites();
+    for (int i = 0; i < N_pinning; i++) {
+        printf("id %d, c: %.2f %.2f,r %.2f, f %.2f, id: %d, m:%.2f cos:%.2f, sin:%.2f,lx: %.2f ly: %.2f\n", pinnings[i].id, pinnings[i].coord.x,
+               pinnings[i].coord.y, pinnings[i].r,pinnings[i].fMax,pinnings[i].particlesId, pinnings[i].middleHeight, pinnings[i].cosfi, pinnings[i].sinfi, pinnings[i].lx,pinnings[i].ly);
+    }
     write_contour_file();
+    initParticles();
+    for (int i = 0; i < N; i++) {
+        printf("id %d,%d, %.2f %.2f p %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
+    }
 
-    buildVerletList();
+//    buildVerletList();
     //printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
-
-    moviefile = fopen(filename, "wb");
-    statistics_file = fopen("statistics.txt", "wt");
-    if (!moviefile || !statistics_file) {
-        fprintf(stderr, "Failed to open file.\n");
-        return 1;
-    }
-
-    for (t = 0; t < 10000; t++) {
-        calculatePairwiseForcesWithVerlet();
-//        calculatePairwiseForces();
-
-        calculateExternalForces();
-        calculatePinningForces();
-        write_statistics();
-        moveParticles();
-        if (flag_to_rebuild_verlet) buildVerletList();
-
-        if (t % 100 == 0) {
-            write_cmovie();
-        }
-        if (t % 500 == 0) {
-            printf("time = %d\n", t);
-            fflush(stdout);
-        }
-    }
-
-    fclose(moviefile);
-    end();
-    fclose(statistics_file);
+//
+//    moviefile = fopen(filename, "wb");
+//    statistics_file = fopen("statistics.txt", "wt");
+//    if (!moviefile || !statistics_file) {
+//        fprintf(stderr, "Failed to open file.\n");
+//        return 1;
+//    }
+//
+//    for (t = 0; t < 10000; t++) {
+//        calculatePairwiseForcesWithVerlet();
+////        calculatePairwiseForces();
+//
+//        calculateExternalForces();
+//        calculatePinningForces();
+//        write_statistics();
+//        moveParticles();
+//        if (flag_to_rebuild_verlet) buildVerletList();
+//
+//        if (t % 100 == 0) {
+//            write_cmovie();
+//        }
+//        if (t % 500 == 0) {
+//            printf("time = %d\n", t);
+//            fflush(stdout);
+//        }
+//    }
+//
+//    fclose(moviefile);
+//    end();
+//    fclose(statistics_file);
     printf("The result(for plot) can be found in file: %s\n", filename);
-    free(particles);
-    free(pinnings);
+//    free(particles);
+//    free(pinnings);
     return 0;
 }

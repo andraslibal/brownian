@@ -19,8 +19,16 @@ Particle *particles;    //list of particle
 int t;                  //time
 
 ///Pinning
-int N_pinning;          //number of pinnings
+int N_pinning;              //number of pinnings
 Pinning *pinnings;
+int pinningNX;           //hany pinning sites van vizszintesen
+int pinningNY;           //hany pinning van fuggolegesen
+double pinningDistX;        // vizszintesen milyen tavol vannak egymastol a siteok
+double pinningDistY;        // fuggolegesen milyen tavol vannak egymastol a siteok
+double pinningLx2;          //hosszusag
+double pinningLy2;          //magassag
+double pinningFMax;         //max ero
+double pinningMiddleHeight; //ket godor kozti magassag
 
 ///Cutoff
 double r0;              //the cutoff distance
