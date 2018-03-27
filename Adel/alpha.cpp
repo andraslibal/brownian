@@ -36,10 +36,6 @@ double r_verlet;
 //to potentially destroy the Verlet list
 double r_travel_max;
 
-//total runtime
-int total_runtime;
-int time_echo;
-
 //verlet lists
 vector<vector<int> > verlet;
 int rebuild_verlet_flag;
@@ -67,6 +63,11 @@ char* moviefile;
 double dt = 0.0;
 time_t beginning_time = 0;
 time_t ending_time = 0;
+
+//total runtime
+int time_echo;
+int current_time = 0;
+int total_time = 0;
 
 void start_timing()
 {
@@ -129,14 +130,18 @@ void initParticles()
     r0 = 4.0;
     r_verlet = 6.0;
     r_travel_max = r_verlet - r0;
+
     dt = 0.01;
+    current_time = 0;
+    total_time = 100000;
+    time_echo = 500;
 
     rebuild_verlet_flag = 1;
     x_so_far = new double[N];
     y_so_far = new double[N];
 
-    N_pinning_sites = 2000;
-    r_pinning_site = 2.0;
+    N_pinning_sites = 50;
+    r_pinning_site = 1.0;
     f_max_pinning_sites = 2.0;
     x_pinning_site = new double[N_pinning_sites];
     y_pinning_site = new double[N_pinning_sites];
@@ -229,8 +234,8 @@ void initPinningSites()
             // checking if in this position there already is an element
             for (j = 0; j < i; j++)
             {
-                double diffX = x[j] - tmpX;
-                double diffY = y[j] - tmpY;
+                double diffX = x_pinning_site[j] - tmpX;
+                double diffY = y_pinning_site[j] - tmpY;
 
                 if (diffX > Sx_2) diffX -= Sx;
                 if (diffX < -Sx_2) diffX += Sx;
@@ -265,7 +270,6 @@ void calculateTabulatedForces()
         tabulated_force[i] = exp(- r / r0) / r2 * r;
         r2 += tab_measure;
         r = sqrt(r2);
-        cout << r << endl;
     }
 }
 
@@ -361,7 +365,7 @@ void calculateExternalForces()
 {
     for (int i = 0; i < N; i++)
     {
-        fx[i] += q[i] * 0.5;
+        fx[i] += 5.0 * current_time / total_time;
     }
 }
 
@@ -443,7 +447,24 @@ void writeToFile(char* filename)
     f.close();
 }
 
-void write_cmovie(FILE* moviefile, int t)
+void writeContourFile()
+{
+    ofstream f("../Plotter/contour.txt");
+
+    f << N_pinning_sites << endl;
+
+	for(int i = 0; i < N_pinning_sites; i++)
+	{
+		f << x_pinning_site[i] << endl;
+		f << y_pinning_site[i] << endl;
+		f << r_pinning_site << endl;
+		f << r_pinning_site << endl;
+		f << r_pinning_site << endl;
+	}
+    f.close();
+}
+
+void writeCmovie(FILE* moviefile, int t)
 {
     int i;
     float floatholder;
@@ -488,17 +509,16 @@ int main(int argc, char* argv[])
 
     generateCoordinates();
     initPinningSites();
+    writeContourFile();
     calculateTabulatedForces();
 
-    total_runtime = 20000;
-    time_echo = 500;
     start_timing();
-    for (int i = 0; i < total_runtime; i++) 
+    for (current_time = 0; current_time < total_time; current_time++) 
     {
-        if (i % time_echo == 0)
+        if (current_time % time_echo == 0)
         {
-            double perc = (double) i / (double) total_runtime * 100;
-            cout << i << "/" << total_runtime << " " << perc << "%" << endl;
+            double perc = (double) current_time / (double) total_time * 100;
+            cout << current_time << "/" << total_time << " " << perc << "%" << endl;
         }
 
         if (rebuild_verlet_flag == 1) 
@@ -512,8 +532,8 @@ int main(int argc, char* argv[])
         calculatePinningSitesForce();
         moveParticles();
 
-        if (i % 100 == 0)
-            write_cmovie(f, i);
+        if (current_time % 100 == 0)
+            writeCmovie(f, current_time);
     }
     freeData();
     stop_timing();
