@@ -52,10 +52,18 @@ double tab_measure;
 // number of pinning sites
 int N_pinning_sites;
 double r_pinning_site;
-double f_max_pinning_sites;
-// coordinates of pinning sites
+double half_length_pinning_site;
+double K_max_pinning_sites;
+double K;
+// coordinates of pinning sites (center)
 double *x_pinning_site;
 double *y_pinning_site;
+// angle of the pinning site
+double *cos_fi;
+double *sin_fi;
+
+int	pinning_lattice_Nx, pinning_lattice_Ny;
+double pinning_lattice_ax, pinning_lattice_ay;
 
 char* moviefile;
 
@@ -123,9 +131,7 @@ void initParticles()
     tabulated_force = new double[N_tabulate];
 
     Sx = 320.0;
-    Sx_2 = Sx / 2;
     Sy = 320.0;
-    Sy_2 = Sy / 2;
 
     r0 = 4.0;
     r_verlet = 6.0;
@@ -142,9 +148,30 @@ void initParticles()
 
     N_pinning_sites = 50;
     r_pinning_site = 1.0;
-    f_max_pinning_sites = 2.0;
+    half_length_pinning_site = 1.0;
+    K_max_pinning_sites = 2.0;
+    K = 0.2;
+
+	pinning_lattice_Nx = 4;
+    pinning_lattice_Ny = 4;
+	pinning_lattice_ax = 1.0;
+    pinning_lattice_ay = 1.0;
+
+    // calculating the system's size depending on the number of pinning sites
+    double pins_max_length = 2 * (half_length_pinning_site + r_pinning_site);
+    Sx = pinning_lattice_Nx * (pins_max_length + pinning_lattice_ax);
+    Sy = pinning_lattice_Ny * (pins_max_length + pinning_lattice_ay);
+    Sx_2 = Sx / 2;
+    Sy_2 = Sy / 2;
+
+    // calculating number of pinning sites in system
+    N_pinning_sites = pinning_lattice_Nx * pinning_lattice_Ny * 2;
+
     x_pinning_site = new double[N_pinning_sites];
     y_pinning_site = new double[N_pinning_sites];
+
+    sin_fi = new double[N_pinning_sites];
+    cos_fi = new double[N_pinning_sites];
 }
 
 void freeData()
@@ -257,6 +284,38 @@ void initPinningSites()
 
         x_pinning_site[i] = tmpX;
         y_pinning_site[i] = tmpY;
+	}
+}
+
+void initSquarePinningSites()
+{
+    double pin_total_length = 2 * (half_length_pinning_site + r_pinning_site);
+    double x, y = 0.0;
+    int k = -1;
+	for (int i = 0; i < pinning_lattice_Nx; i++)
+	{
+        x = 0.0;
+        for (int j = 0; j < pinning_lattice_Ny; j++)
+        {
+            x += r_pinning_site + half_length_pinning_site + pinning_lattice_ax / 2;
+            x_pinning_site[++k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = 0;
+            cos_fi[k] = 1;
+
+            x += r_pinning_site + half_length_pinning_site + pinning_lattice_ax / 2;
+            y += r_pinning_site + half_length_pinning_site + pinning_lattice_ay / 2;
+
+            x_pinning_site[++k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = 1;
+            cos_fi[k] = 0;
+
+            y -= r_pinning_site + half_length_pinning_site + pinning_lattice_ay / 2;
+        }
+        y += pin_total_length + pinning_lattice_ay;
 	}
 }
 
@@ -386,7 +445,7 @@ void calculatePinningSitesForce()
         	double distance = diffX * diffX + diffY * diffY;
         	if (distance < r_pinning_site * r_pinning_site)
         	{
-        		double f = f_max_pinning_sites / r_pinning_site;
+        		double f = K_max_pinning_sites / r_pinning_site;
         		fx[i] += -f * diffX;
         		fy[i] += -f * diffY;
         	}
@@ -451,7 +510,7 @@ void writeContourFile()
 {
     ofstream f("../Plotter/contour.txt");
 
-    f << N_pinning_sites << endl;
+    f << N_pinning_sites * 3 << endl;
 
 	for(int i = 0; i < N_pinning_sites; i++)
 	{
@@ -460,6 +519,34 @@ void writeContourFile()
 		f << r_pinning_site << endl;
 		f << r_pinning_site << endl;
 		f << r_pinning_site << endl;
+
+        if (cos_fi[i] == 1)
+        {
+            f << x_pinning_site[i] + half_length_pinning_site << endl;
+            f << y_pinning_site[i] << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+
+            f << x_pinning_site[i] - half_length_pinning_site << endl;
+            f << y_pinning_site[i] << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+        } else {
+            f << x_pinning_site[i] << endl;
+            f << y_pinning_site[i] + half_length_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+
+            f << x_pinning_site[i] << endl;
+            f << y_pinning_site[i] - half_length_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+        }
+
 	}
     f.close();
 }
@@ -508,7 +595,7 @@ int main(int argc, char* argv[])
     cout << "moviefile: " << moviefile << endl;
 
     generateCoordinates();
-    initPinningSites();
+    initSquarePinningSites();
     writeContourFile();
     calculateTabulatedForces();
 
@@ -529,7 +616,7 @@ int main(int argc, char* argv[])
 
         calculateForces();
         calculateExternalForces();
-        calculatePinningSitesForce();
+        // calculatePinningSitesForce();
         moveParticles();
 
         if (current_time % 100 == 0)
