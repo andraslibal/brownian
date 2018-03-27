@@ -1,1 +1,3 @@
-/home/deim1508/Documents/brownian/CMakeFiles/brownian.dir
+/home/rebeka/Documents/brownian/CMakeFiles/rebuild_cache.dir
+/home/rebeka/Documents/brownian/CMakeFiles/edit_cache.dir
+/home/rebeka/Documents/brownian/CMakeFiles/brownian.dir
