@@ -25,8 +25,8 @@ int pinningNX;           //hany pinning sites van vizszintesen
 int pinningNY;           //hany pinning van fuggolegesen
 double pinningDistX;        // vizszintesen milyen tavol vannak egymastol a siteok
 double pinningDistY;        // fuggolegesen milyen tavol vannak egymastol a siteok
-double pinningLx2;          //hosszusag
-double pinningLy2;          //magassag
+double pinningLx2;          //hosszusag/2
+double pinningLy2;          //magassag/2
 double pinningR;            //sugar
 double pinningFMax;         //max ero
 double pinningMiddleHeight; //ket godor kozti magassag

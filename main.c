@@ -382,19 +382,43 @@ void write_cmovie() {
 
 void write_contour_file() {
     FILE *f;
-
     f = fopen("contour.txt", "wt");
 
-    fprintf(f, "%d\n", N_pinning);
-
+    fprintf(f, "%d\n", N_pinning*3);
     for (int i = 0; i < N_pinning; i++) {
+        printf("kor %d\n",i);
         fprintf(f, "%e\n", pinnings[i].coord.x);
         fprintf(f, "%e\n", pinnings[i].coord.y);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
+        if(!pinnings[i].sinfi){
+            fprintf(f, "%e\n", pinnings[i].coord.x+pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].coord.y);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+
+            fprintf(f, "%e\n", pinnings[i].coord.x-pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].coord.y);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+        }else{
+            fprintf(f, "%e\n", pinnings[i].coord.x);
+            fprintf(f, "%e\n", pinnings[i].coord.y+pinningLy2);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+
+            fprintf(f, "%e\n", pinnings[i].coord.x);
+            fprintf(f, "%e\n", pinnings[i].coord.y-pinningLy2);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+        }
     }
-    fclose(f);
+//    fclose(f);
 }
 
 void write_statistics() {
@@ -461,51 +485,50 @@ int main(int argc, char *argv[]) {
 
     start();
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    //initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 1.0, 3000, 0.15);
+    initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 1.0, 3000, 0.15);
     ///inicializalas Particle: N, sX+sY, dt, r, rv
     init(200, 40.0, 0.002, 4.0, 6.0);
 //
-//    initPinningSites();
+    initPinningSites();
 //    for (int i = 0; i < N_pinning; i++) {
 //        printf("id %d, c: %.2f %.2f,r %.2f, f %.2f, id: %d, m:%.2f cos:%.2f, sin:%.2f,lx: %.2f ly: %.2f\n", pinnings[i].id, pinnings[i].coord.x,
 //               pinnings[i].coord.y, pinnings[i].r,pinnings[i].fMax,pinnings[i].particlesId, pinnings[i].middleHeight, pinnings[i].cosfi, pinnings[i].sinfi, pinnings[i].lx,pinnings[i].ly);
 //    }
 
-    printf("N_pinning %d, sX %.2f, sY %.2f\n", N_pinning, sX, sY);
-//    write_contour_file();
-    initParticles();
-    for (int i = 0; i < N; i++) {
-        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
-    }
-
-    buildVerletList();
-    //  printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
-
-    moviefile = fopen(filename, "wb");
-    statistics_file = fopen("statistics.txt", "wt");
-    if (!moviefile || !statistics_file) {
-        fprintf(stderr, "Failed to open file.\n");
-        return 1;
-    }
-
-    for (t = 0; t < 10000; t++) {
-        calculatePairwiseForcesWithVerlet();
-//        calculatePairwiseForces();
-
-        calculateExternalForces();
-        calculatePinningForces();
-        write_statistics();
-        moveParticles();
-        if (flag_to_rebuild_verlet) buildVerletList();
-
-        if (t % 100 == 0) {
-            write_cmovie();
-        }
-        if (t % 500 == 0) {
-            printf("time = %d\n", t);
-            fflush(stdout);
-        }
-    }
+    write_contour_file();
+//    initParticles();
+//    for (int i = 0; i < N; i++) {
+//        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
+//    }
+//
+//    buildVerletList();
+//    //  printf("%d aktualis %d\n", N_verlet_list, N_verlet_actual);
+//
+//    moviefile = fopen(filename, "wb");
+//    statistics_file = fopen("statistics.txt", "wt");
+//    if (!moviefile || !statistics_file) {
+//        fprintf(stderr, "Failed to open file.\n");
+//        return 1;
+//    }
+//
+//    for (t = 0; t < 10000; t++) {
+//        calculatePairwiseForcesWithVerlet();
+////        calculatePairwiseForces();
+//
+//        calculateExternalForces();
+//        calculatePinningForces();
+//        write_statistics();
+//        moveParticles();
+//        if (flag_to_rebuild_verlet) buildVerletList();
+//
+//        if (t % 100 == 0) {
+//            write_cmovie();
+//        }
+//        if (t % 500 == 0) {
+//            printf("time = %d\n", t);
+//            fflush(stdout);
+//        }
+//    }
 //
 //    fclose(moviefile);
 //    end();
