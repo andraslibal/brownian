@@ -27,6 +27,7 @@ double pinningDistX;        // vizszintesen milyen tavol vannak egymastol a site
 double pinningDistY;        // fuggolegesen milyen tavol vannak egymastol a siteok
 double pinningLx2;          //hosszusag
 double pinningLy2;          //magassag
+double pinningR;            //sugar
 double pinningFMax;         //max ero
 double pinningMiddleHeight; //ket godor kozti magassag
 
