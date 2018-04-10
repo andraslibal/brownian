@@ -11,6 +11,8 @@
 
 using namespace std;
 
+#define PI 3.14159265358979323846264338327950288419716939937510
+
 // number of elements
 int N;
 // ids of the particles
@@ -53,6 +55,7 @@ double tab_measure;
 int N_pinning_sites;
 double r_pinning_site;
 double half_length_pinning_site;
+double pin_length;
 double K_max_pinning_sites;
 double K;
 // coordinates of pinning sites (center)
@@ -102,21 +105,23 @@ void readDataFromFile(const char* filename)
         f >> moviefile;
         strcat(moviefile, ".mvi");
         f >> Sx;
-        Sx_2 = Sx / 2;
         f >> Sy;
-        Sy_2 = Sy / 2;
         f >> N;
     }
 
     f.close();
 }
 
+void initSize() {
+    strcpy(moviefile, "moviefile.mvi");
+    Sx = 320.0;
+    Sy = 320.0;
+    N = 51200;
+}
+
 void initParticles()
 {
-    N = 51200;
     ID = new int[N];
-
-    moviefile = new char[30];
 
     x = new double[N];
     y = new double[N];
@@ -129,9 +134,6 @@ void initParticles()
 
     N_tabulate = 50000;
     tabulated_force = new double[N_tabulate];
-
-    Sx = 320.0;
-    Sy = 320.0;
 
     r0 = 4.0;
     r_verlet = 6.0;
@@ -146,7 +148,6 @@ void initParticles()
     x_so_far = new double[N];
     y_so_far = new double[N];
 
-    N_pinning_sites = 50;
     r_pinning_site = 1.0;
     half_length_pinning_site = 1.0;
     K_max_pinning_sites = 2.0;
@@ -154,24 +155,39 @@ void initParticles()
 
 	pinning_lattice_Nx = 4;
     pinning_lattice_Ny = 4;
-	pinning_lattice_ax = 1.0;
-    pinning_lattice_ay = 1.0;
+	pinning_lattice_ax = 5.0;
+    pinning_lattice_ay = 5.0;
 
     // calculating the system's size depending on the number of pinning sites
-    double pins_max_length = 2 * (half_length_pinning_site + r_pinning_site);
-    Sx = pinning_lattice_Nx * (pins_max_length + pinning_lattice_ax);
-    Sy = pinning_lattice_Ny * (pins_max_length + pinning_lattice_ay);
+    pin_length = 2 * (half_length_pinning_site + r_pinning_site);
+
+    printf("Initialization complete\n");fflush(stdout);
+}
+
+void initArraysForPinningSites(int multiplier)
+{
+    if (multiplier == 2) 
+    {
+        Sx = pinning_lattice_Nx * pinning_lattice_ax;
+        Sy = pinning_lattice_Ny * pinning_lattice_ay;
+    } else 
+    if (multiplier == 6)
+    {
+        Sx = pinning_lattice_Nx * pinning_lattice_ax * 3;
+        Sy = pinning_lattice_Ny * pinning_lattice_ay * sqrt(3);
+    }
     Sx_2 = Sx / 2;
     Sy_2 = Sy / 2;
 
     // calculating number of pinning sites in system
-    N_pinning_sites = pinning_lattice_Nx * pinning_lattice_Ny * 2;
+    N_pinning_sites = pinning_lattice_Nx * pinning_lattice_Ny * multiplier;
 
     x_pinning_site = new double[N_pinning_sites];
     y_pinning_site = new double[N_pinning_sites];
 
     sin_fi = new double[N_pinning_sites];
     cos_fi = new double[N_pinning_sites];
+
 }
 
 void freeData()
@@ -208,8 +224,8 @@ void generateCoordinates()
 
                 if (diffX > Sx_2) diffX -= Sx;
                 if (diffX < -Sx_2) diffX += Sx;
-                if (diffX > Sy_2) diffX -= Sy;
-                if (diffX < -Sy_2) diffX += Sy;
+                if (diffY > Sy_2) diffY -= Sy;
+                if (diffY < -Sy_2) diffY += Sy;
 
                 double diffSquare = diffX * diffX + diffY * diffY;
                 if (diffSquare < 0.2 * 0.2) // the distance between two particles has to 
@@ -245,10 +261,13 @@ void generateCoordinates()
         x_so_far[i] = 0.0;
         y_so_far[i] = 0.0;
     }
+
+    printf("Generated coordinates for the particles\n");fflush(stdout);
 }
 
 void initPinningSites()
 {
+    initArraysForPinningSites(1);
 	for (int i = 0; i < N_pinning_sites; i++)
 	{
 		int j;
@@ -289,33 +308,114 @@ void initPinningSites()
 
 void initSquarePinningSites()
 {
-    double pin_total_length = 2 * (half_length_pinning_site + r_pinning_site);
-    double x, y = 0.0;
-    int k = -1;
-	for (int i = 0; i < pinning_lattice_Nx; i++)
+    double x, y, ax, ay;
+    int i, j, k;
+
+    x = 0.0;
+    y = 0.0;
+    k = 0;
+
+    initArraysForPinningSites(2);
+
+	for (i = 0; i < pinning_lattice_Nx; i++)
 	{
         x = 0.0;
-        for (int j = 0; j < pinning_lattice_Ny; j++)
+        for (j = 0; j < pinning_lattice_Ny; j++)
         {
-            x += r_pinning_site + half_length_pinning_site + pinning_lattice_ax / 2;
-            x_pinning_site[++k] = x;
+            x += pinning_lattice_ax / 2;
+            x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
             sin_fi[k] = 0;
-            cos_fi[k] = 1;
+            cos_fi[k++] = 1;
 
-            x += r_pinning_site + half_length_pinning_site + pinning_lattice_ax / 2;
-            y += r_pinning_site + half_length_pinning_site + pinning_lattice_ay / 2;
-
-            x_pinning_site[++k] = x;
+            x += pinning_lattice_ax / 2;
+            y += pinning_lattice_ay / 2;
+            x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
             sin_fi[k] = 1;
-            cos_fi[k] = 0;
+            cos_fi[k++] = 0;
 
-            y -= r_pinning_site + half_length_pinning_site + pinning_lattice_ay / 2;
+            y -= pinning_lattice_ay / 2;
         }
-        y += pin_total_length + pinning_lattice_ay;
+        y += pinning_lattice_ay;
+	}
+
+  printf("Initialized square pinning array\n");fflush(stdout);  
+}
+
+void initHexaPinningSites()
+{
+    double x, y, sqrt3;
+    int i, j, k;
+
+    sqrt3 = sqrt(3);
+
+    x = 0.0;
+    y = pin_length * sqrt3 / 2;
+
+    k = 0;
+
+    initArraysForPinningSites(6);
+	for (i = 0; i < pinning_lattice_Nx; i++)
+	{
+        x = pinning_lattice_ax / 2;
+        for (j = 0; j < pinning_lattice_Ny; j++)
+        {
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = 0;
+            cos_fi[k++] = 1;
+
+            x += 3 * pinning_lattice_ax / 4;
+            y += pinning_lattice_ay * sqrt3 / 4;
+
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = sin(PI / 3);
+            cos_fi[k++] = cos(PI / 3);
+
+            y -= pinning_lattice_ay * sqrt3 / 2;
+
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = sin(-PI / 3);
+            cos_fi[k++] = cos(-PI / 3);
+
+            x += 3 * pinning_lattice_ax / 4;
+            y -= pinning_lattice_ay * sqrt3 / 4;
+
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = 0;
+            cos_fi[k++] = 1;
+
+            x += 3 * pinning_lattice_ax / 4;
+            y += pinning_lattice_ay * sqrt3 / 4;
+
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = sin(PI / 3);
+            cos_fi[k++] = cos(PI / 3);
+
+            y += pinning_lattice_ay * sqrt3 / 2;
+
+            x_pinning_site[k] = x;
+            y_pinning_site[k] = y;
+
+            sin_fi[k] = sin(-PI / 3);
+            cos_fi[k++] = cos(-PI / 3);
+
+            x += 3 * pinning_lattice_ax / 4;
+            y -= pinning_lattice_ax  * sqrt3 / 4;
+        }
+        y += pinning_lattice_ay * sqrt3;
 	}
 }
 
@@ -395,6 +495,8 @@ void colorVerlet()
 
 void calculateForces()
 {
+    double f;
+
     for (int it = 0; it < verlet.size(); it++)
     {
 
@@ -410,8 +512,12 @@ void calculateForces()
         if (diffY > Sy_2) diffY -= Sy;
 
         double distance = diffX * diffX + diffY * diffY;
-        int tab_index = (int)floor((distance-tab_start)/(tab_measure));
-        double f = tabulated_force[tab_index];
+        int tab_index;
+        if (distance < 0.1) tab_index=0;
+        else tab_index = (int)floor((distance-tab_start)/tab_measure);
+  
+        if (tab_index >= 50000) f = 0.0;
+        else f = tabulated_force[tab_index];
 
         fx[i] += f * diffX;
         fy[i] += f * diffY;
@@ -509,7 +615,9 @@ void writeToFile(char* filename)
 void writeContourFile()
 {
     ofstream f("../Plotter/contour.txt");
-
+    double sqrt3;
+    
+    sqrt3 = sqrt(3);
     f << N_pinning_sites * 3 << endl;
 
 	for(int i = 0; i < N_pinning_sites; i++)
@@ -533,7 +641,21 @@ void writeContourFile()
             f << r_pinning_site << endl;
             f << r_pinning_site << endl;
             f << r_pinning_site << endl;
-        } else {
+        } else 
+        if (cos_fi[i] == cos(PI / 3) && sin_fi[i] == sin(PI / 3)) {
+            f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+            f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+
+            f << x_pinning_site[i] - half_length_pinning_site / 2 << endl;
+            f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+        } else 
+        if (cos_fi[i] == 0) {
             f << x_pinning_site[i] << endl;
             f << y_pinning_site[i] + half_length_pinning_site << endl;
             f << r_pinning_site << endl;
@@ -545,10 +667,24 @@ void writeContourFile()
             f << r_pinning_site << endl;
             f << r_pinning_site << endl;
             f << r_pinning_site << endl;
+        } else {
+            f << x_pinning_site[i] - half_length_pinning_site / 2<< endl;
+            f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+
+            f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+            f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
+            f << r_pinning_site << endl;
         }
 
 	}
     f.close();
+    
+    printf("Written the contour file\n");fflush(stdout);
 }
 
 void writeCmovie(FILE* moviefile, int t)
@@ -556,26 +692,39 @@ void writeCmovie(FILE* moviefile, int t)
     int i;
     float floatholder;
     int intholder;
-    
+
     intholder = N;
-    fwrite(&intholder,sizeof(int),1,moviefile);
-    
+    fwrite(&intholder, sizeof(int), 1, moviefile);
+
     intholder = t;
-    fwrite(&intholder,sizeof(int),1,moviefile);
+    fwrite(&intholder, sizeof(int) ,1, moviefile);
     
     for (int i = 0; i < N; i++)
     {
         intholder = color[i] + 2;
-        fwrite(&intholder,sizeof(int),1,moviefile);
+        fwrite(&intholder, sizeof(int), 1, moviefile);
         intholder = ID[i];//ID
-        fwrite(&intholder,sizeof(int),1,moviefile);
+        fwrite(&intholder, sizeof(int), 1, moviefile);
         floatholder = (float)x[i];
-        fwrite(&floatholder,sizeof(float),1, moviefile);
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
         floatholder = (float)y[i];
-        fwrite(&floatholder,sizeof(float),1,moviefile);
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
         floatholder = 1.0;//cum_disp, cmovie format
-        fwrite(&floatholder,sizeof(float),1,moviefile);
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
     }
+}
+
+void writeGfile()
+{
+    ofstream f("../Plotter/gfile");
+
+    f << "set xrange -5 " << Sx + 5 << endl;
+    f << "set yrange -5 " << Sy + 5 << endl;
+    f << "loadcolormap colors.txt" << endl;
+    f << "loadcontour contour.txt" << endl;
+    f << "cmovie" << endl;
+
+    f.close();
 }
 
 int main(int argc, char* argv[]) 
@@ -583,19 +732,24 @@ int main(int argc, char* argv[])
     cout << "Generic BD simulation" << endl;
     cout << "Simulating spontaneous lane formation" << endl;
 
-    initParticles();
     FILE* f;
+    moviefile = new char[30];
     if (argc == 2) 
         readDataFromFile(argv[1]);
+    else
+        initSize();
 
     f = fopen(moviefile, "wb");
+
+    initParticles();
+    initHexaPinningSites();
+    writeGfile();
     cout << "Sx = " << Sx << endl;
     cout << "Sy = " << Sy << endl;
     cout << "N = " << N << endl;
     cout << "moviefile: " << moviefile << endl;
 
     generateCoordinates();
-    initSquarePinningSites();
     writeContourFile();
     calculateTabulatedForces();
 
@@ -616,12 +770,15 @@ int main(int argc, char* argv[])
 
         calculateForces();
         calculateExternalForces();
+ 
+
         // calculatePinningSitesForce();
         moveParticles();
 
         if (current_time % 100 == 0)
             writeCmovie(f, current_time);
     }
+    fclose(f);
     freeData();
     stop_timing();
     return 0;
