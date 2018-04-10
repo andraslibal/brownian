@@ -64,6 +64,8 @@ double *y_pinning_site;
 // angle of the pinning site
 double *cos_fi;
 double *sin_fi;
+// particles ID in pinning site
+int* particle_ID;
 
 int	pinning_lattice_Nx, pinning_lattice_Ny;
 double pinning_lattice_ax, pinning_lattice_ay;
@@ -121,6 +123,7 @@ void initSize() {
 
 void initParticles()
 {
+    N = N_pinning_sites;
     ID = new int[N];
 
     x = new double[N];
@@ -147,7 +150,11 @@ void initParticles()
     rebuild_verlet_flag = 1;
     x_so_far = new double[N];
     y_so_far = new double[N];
+    printf("Initialization complete\n");fflush(stdout);
+}
 
+void initArraysForPinningSites(int multiplier)
+{
     r_pinning_site = 1.0;
     half_length_pinning_site = 1.0;
     K_max_pinning_sites = 2.0;
@@ -161,11 +168,6 @@ void initParticles()
     // calculating the system's size depending on the number of pinning sites
     pin_length = 2 * (half_length_pinning_site + r_pinning_site);
 
-    printf("Initialization complete\n");fflush(stdout);
-}
-
-void initArraysForPinningSites(int multiplier)
-{
     if (multiplier == 2) 
     {
         Sx = pinning_lattice_Nx * pinning_lattice_ax;
@@ -181,6 +183,8 @@ void initArraysForPinningSites(int multiplier)
 
     // calculating number of pinning sites in system
     N_pinning_sites = pinning_lattice_Nx * pinning_lattice_Ny * multiplier;
+
+    particle_ID = new int[N_pinning_sites];
 
     x_pinning_site = new double[N_pinning_sites];
     y_pinning_site = new double[N_pinning_sites];
@@ -205,11 +209,11 @@ void freeData()
 
 void generateCoordinates()
 {
-    for (int i = 0; i < N; i++)
+    int i, j;
+    for (i = 0; i < N; i++)
     {
         ID[i] = i;
 
-        int j;
         double tmpX;
         double tmpY;
         do {
@@ -263,6 +267,29 @@ void generateCoordinates()
     }
 
     printf("Generated coordinates for the particles\n");fflush(stdout);
+}
+
+void putParticleInPinningSite() 
+{
+    int i;
+    for (i = 0; i < N_pinning_sites; i++)
+    {
+        ID[i] = i;
+
+        x[i] = x_pinning_site[i];
+        y[i] = y_pinning_site[i];
+
+        particle_ID[i] = ID[i];
+
+        color[i] = 1;
+        q[i] = 1.0;
+
+        // setting the initial forces
+        fx[i] = 0.0;
+        fy[i] = 0.0;
+        x_so_far[i] = 0.0;
+        y_so_far[i] = 0.0;
+    }
 }
 
 void initPinningSites()
@@ -741,15 +768,16 @@ int main(int argc, char* argv[])
 
     f = fopen(moviefile, "wb");
 
-    initParticles();
     initHexaPinningSites();
+    initParticles();
     writeGfile();
     cout << "Sx = " << Sx << endl;
     cout << "Sy = " << Sy << endl;
     cout << "N = " << N << endl;
     cout << "moviefile: " << moviefile << endl;
 
-    generateCoordinates();
+    // generateCoordinates();
+    putParticleInPinningSite();
     writeContourFile();
     calculateTabulatedForces();
 
@@ -773,7 +801,7 @@ int main(int argc, char* argv[])
  
 
         // calculatePinningSitesForce();
-        moveParticles();
+        // moveParticles();
 
         if (current_time % 100 == 0)
             writeCmovie(f, current_time);
