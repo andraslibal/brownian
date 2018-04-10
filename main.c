@@ -55,7 +55,7 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     //Verlet list
     ////N_verlet= (pi*rv^2*N^2)/(2*sX*sY)
     N_verlet_list = (int) floor((3.14 * rv * rv * N_particles * N_particles) / (2 * sX * sY));
-    // printf("Estimated Verlet list length is = %d\n", N_verlet_list);
+    printf("Estimated Verlet list length is = %d\n", N_verlet_list);
 
     vlist1 = NULL;
     vlist2 = NULL;
@@ -252,8 +252,8 @@ void initPinningSites() {
 void calculateThermalForces() {
     double fx, fy;
     for (int i = 0; i < N_particles; i++) {
-        fx = 5.0 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
-        fy = 5.5 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        fx = 10.0 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        fy = 10.5 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
         particles[i].fx += fx;
         particles[i].fy += fy;
 //        printf("fx %.2lf fy %.2lf\n",fx,fy);
@@ -602,7 +602,7 @@ int main(int argc, char *argv[]) {
 
     start();
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 0.5, 0.1, 0.01);
+    initPinning(20, 20, 2.0, 2.0, 0.6, 1.0, 0.3, 0.2, 0.05);
     ///inicializalas Particle: N_particles, sX+sY, dt, r, rv
     init(N_pinning, 40.0, 0.002, 4.0, 6.0);
 
@@ -628,8 +628,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (t = 0; t < 1000000; t++) {
-//        calculatePairwiseForcesWithVerlet();
+    for (t = 0; t < 100000; t++) {
+        calculatePairwiseForcesWithVerlet();
 ////        calculatePairwiseForces();
 //        calculateExternalForces();
         calculateThermalForces();
