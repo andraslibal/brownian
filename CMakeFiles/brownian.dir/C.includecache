@@ -7,8 +7,6 @@
 #IncludeRegexTransform: 
 
 /home/rebeka/Documents/brownian/data.h
-stdio.h
--
 stdlib.h
 -
 time.h
@@ -19,22 +17,20 @@ string.h
 -
 regex.h
 -
-stdio.h
--
 pinning.h
 /home/rebeka/Documents/brownian/pinning.h
 
 /home/rebeka/Documents/brownian/main.c
 data.h
 /home/rebeka/Documents/brownian/data.h
+errno.h
+-
 
 /home/rebeka/Documents/brownian/particle.h
 stdio.h
 -
 
 /home/rebeka/Documents/brownian/pinning.h
-stdio.h
--
 particle.h
 /home/rebeka/Documents/brownian/particle.h
 

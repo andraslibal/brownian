@@ -1,19 +1,17 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <string.h>
 #include <regex.h>
-#include <stdio.h>
 #include "pinning.h"
 
 ///Particles
-/*(N, number of  particles and also the box size, proportionally! if  you
-        increase the box to be 2x as big in x and y direction N has to be 4x as much to have
+/*(N_particles, number of  particles and also the box size, proportionally! if  you
+        increase the box to be 2x as big in x and y direction N_particles has to be 4x as much to have
 the same density*/
 double sX, sY;          //system size x,y direction
 double sX2, sY2;        //half of the system size
-int N;                  //number of particles
+int N_particles;                  //number of particles
 double dt;              //length of a single time step
 Particle *particles;    //list of particle
 int t;                  //time

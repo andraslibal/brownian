@@ -1,7 +1,6 @@
 //
 // Created by rebeka on 27.03.2018.
 //
-#include <stdio.h>
 #include "particle.h"
 
 
