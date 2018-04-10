@@ -726,7 +726,7 @@ void writeCmovie(FILE* moviefile, int t)
     intholder = t;
     fwrite(&intholder, sizeof(int) ,1, moviefile);
     
-    for (int i = 0; i < N; i++)
+    for (i = 0; i < N; i++)
     {
         intholder = color[i] + 2;
         fwrite(&intholder, sizeof(int), 1, moviefile);
@@ -745,8 +745,8 @@ void writeGfile()
 {
     ofstream f("../Plotter/gfile");
 
-    f << "set xrange -5 " << Sx + 5 << endl;
-    f << "set yrange -5 " << Sy + 5 << endl;
+    f << "set xrange -5 " << (int) Sx << endl;
+    f << "set yrange -5 " << (int) Sy << endl;
     f << "loadcolormap colors.txt" << endl;
     f << "loadcontour contour.txt" << endl;
     f << "cmovie" << endl;
