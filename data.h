@@ -28,6 +28,7 @@ double pinningLy2;          //magassag/2
 double pinningR;            //sugar
 double pinningFMax;         //max ero
 double pinningMiddleHeight; //ket godor kozti magassag
+double pinningK;
 
 ///Cutoff
 double r0;              //the cutoff distance

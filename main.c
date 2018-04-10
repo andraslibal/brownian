@@ -1,5 +1,6 @@
 #include "data.h"
 #include <errno.h>
+//#include "random_numrec.h"
 
 //elore kiszamolt f/r, hogy a reszecskek egymasra hataskor ne kelljen szamolni, csak kiszedni a listabol az erteket
 void tabulateForces() {
@@ -40,8 +41,8 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
         exit(EXIT_FAILURE);
     }
     //sX = sY = systemSize;
-    sX = pinningNX * (pinningDistX + 2 * (pinningLx2 + pinningR));
-    sY = pinningNY * (pinningDistY + 2 * (pinningLy2 + pinningR));
+    sX = pinningNX * (pinningDistX);
+    sY = pinningNY * (pinningDistY);
     sX2 = sX / 2;
     sY2 = sY / 2;
     dt = timeStep;
@@ -54,7 +55,7 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     //Verlet list
     ////N_verlet= (pi*rv^2*N^2)/(2*sX*sY)
     N_verlet_list = (int) floor((3.14 * rv * rv * N_particles * N_particles) / (2 * sX * sY));
-   // printf("Estimated Verlet list length is = %d\n", N_verlet_list);
+    // printf("Estimated Verlet list length is = %d\n", N_verlet_list);
 
     vlist1 = NULL;
     vlist2 = NULL;
@@ -76,7 +77,7 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     }
 
     tabulateForces();
-    printf("General Init done!\n N_particles=%d N_pinning=%d,sX=%.2f sY=%.2f\n", N_particles,N_pinning, sX, sY);
+    printf("General Init done!\n N_particles=%d N_pinning=%d,sX=%.2f sY=%.2f\n", N_particles, N_pinning, sX, sY);
 }
 
 void initPinning(int nrX, int nrY, double distX, double distY, double lx2, double ly2, double r, double fmax,
@@ -99,6 +100,7 @@ void initPinning(int nrX, int nrY, double distX, double distY, double lx2, doubl
     pinningR = r;
     pinningFMax = fmax;
     pinningMiddleHeight = middleHeight;
+    pinningK = pinningFMax / pinningR;
     printf("Init Pinning done,with\nNpinning=%d, nX=%d,nY=%d,latticeX=%.2f,latticeY=%.2f\n", N_pinning, pinningNX,
            pinningNY, pinningDistX, pinningDistY);
 }
@@ -157,6 +159,24 @@ void initParticles() {
     printf("Init particles done!\n");
 }
 
+void initSquareParticles() {
+    for (int i = 0; i < N_pinning; i++) {
+        particles[i].id = i;
+        particles[i].color = 3; //color
+        particles[i].q = 1;
+        particles[i].coord.x = pinnings[i].coord.x;
+        particles[i].coord.y = pinnings[i].coord.y;
+        //printf("partx %.2f,party %.2f pinx %.2f piny %.2f\n", particles[i].coord.x, particles[i].coord.y,pinnings[i].coord.x, pinnings[i].coord.y);
+        particles[i].coord.x += pinnings[i].lx * pinnings[i].cosfi;
+        particles[i].coord.y += pinnings[i].ly * pinnings[i].sinfi;
+        particles[i].fx = 0.0; //force
+        particles[i].fy = 0.0;
+        particles[i].drx = 0.0;
+        particles[i].dry = 0.0;
+        particles[i].pinningSiteId = pinnings[i].id;
+        pinnings[i].particlesId = particles[i].id;
+    }
+};
 
 //pinning helyenek a megkeresese
 void stowPinning(Coordinate *right_coord, int i) {
@@ -189,8 +209,8 @@ void initPinningSites() {
         for (int j = 0; j < pinningNY; j++) {
             //horizontal
             pinnings[k].id = k;
-            pinnings[k].coord.x = (i + 0.5) * pinningDistX;
-            pinnings[k].coord.y = (j) * pinningDistY;
+            pinnings[k].coord.x = (i + 0.5 + 0.1) * pinningDistX;
+            pinnings[k].coord.y = (j + 0.1) * pinningDistY;
             pinnings[k].lx = pinningLx2;
             pinnings[k].ly = pinningLy2;
             pinnings[k].sinfi = 0.0;
@@ -203,8 +223,8 @@ void initPinningSites() {
             //vertical
             k++;
             pinnings[k].id = k;
-            pinnings[k].coord.x = (i) * pinningDistX;
-            pinnings[k].coord.y = (j + 0.5) * pinningDistY;
+            pinnings[k].coord.x = (i + 0.1) * pinningDistX;
+            pinnings[k].coord.y = (j + 0.5 + 0.1) * pinningDistY;
             pinnings[k].lx = pinningLx2;
             pinnings[k].ly = pinningLy2;
             pinnings[k].sinfi = 1.0;
@@ -229,24 +249,59 @@ void initPinningSites() {
 //           pinnings[N_pinning-1].coord.x,pinnings[N_pinning-1].coord.y,pinnings[N_pinning-1].lx,pinnings[N_pinning-1].lx);
 }
 
+void calculateThermalForces() {
+    double fx, fy;
+    for (int i = 0; i < N_particles; i++) {
+        fx = 5.0 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        fy = 5.5 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        particles[i].fx += fx;
+        particles[i].fy += fy;
+//        printf("fx %.2lf fy %.2lf\n",fx,fy);
+    }
+}
+
 void calculatePinningForces() {
     double dx, dy, dr2, f, fx, fy;
+    double dxp, dyp, fxp, fyp;
+    int j;
 
-    for (int i = 0; i < N_particles; i++)
-        for (int j = 0; j < N_pinning; j++) {
-            dx = particles[i].coord.x - pinnings[j].coord.x;
-            dy = particles[i].coord.y - pinnings[j].coord.y;
-            keepParticleInSystem(&dx, &dy);
-            dr2 = dx * dx + dy * dy;
-            if (dr2 < (pinnings[j].r * pinnings[j].r)) {
-                f = 1.0 / pinnings[j].r * pinnings[j].fMax;
-                fx = -f * dx;
-                fy = -f * dy;
+    for (int i = 0; i < N_particles; i++) {
+        j = i;
+        dx = particles[i].coord.x - pinnings[j].coord.x;
+        dy = particles[i].coord.y - pinnings[j].coord.y;
+        keepParticleInSystem(&dx, &dy);
+        //forgatas laposba
+        dxp = pinnings[j].cosfi * dx - pinnings[j].sinfi * dy;
+        dyp = pinnings[j].sinfi * dx + pinnings[j].cosfi * dy;
+//        dxp=dx;
+//        dyp=dy;
 
-                particles[i].fx += fx;
-                particles[i].fy += fy;
-            }
+//        fxp = -0.1 * dxp;
+//        fyp = -0.3 * dyp;
+
+        if (dxp <= (-pinningLx2)) {
+            fxp = -pinningK * (dxp + pinningLx2);
+            fyp = -pinningK * dyp;
+//            printf("elso eset dxp<=-lx2\n");
+        } else if (dxp > (-pinningLx2) && (dxp < pinningLx2)) {
+            fxp = (pinningLx2 - fabs(dxp))*pinningMiddleHeight;
+            if(dxp<0) fxp=-fxp;
+//            fxp=0.0;
+            fyp = -pinningK * dyp;
+//            printf("masodik eset -lx2<dxp<lx2\n");
+        } else if (dxp >= pinningLx2) {
+            fxp = -pinningK * (dxp-pinningLx2);
+            fyp = -pinningK * dyp;
+//            printf("harmadik eset dxp>=lx2\n");
         }
+
+        fx = pinnings[j].cosfi * fxp + pinnings[j].sinfi * fyp;
+        fy = -pinnings[j].sinfi * fxp + pinnings[j].cosfi * fyp;
+        particles[i].fx += fx;
+        particles[i].fy += fy;
+
+    }
+
 }
 
 void calculateExternalForces() {
@@ -380,7 +435,7 @@ void buildVerletList() {
     }
 
     flag_to_rebuild_verlet = 0;
-  //  printf("Verlet rebuild done t=%d N_aktualis %d\n", t, N_verlet_actual);
+    //  printf("Verlet rebuild done t=%d N_aktualis %d\n", t, N_verlet_actual);
 }
 
 void moveParticles() {
@@ -404,6 +459,7 @@ void moveParticles() {
         particles[i].fx = 0.0;
         particles[i].fy = 0.0;
     }
+  //  printf("%lf %lf\n", particles[0].coord.x, particles[0].coord.y);
 }
 
 //this is for plot
@@ -442,7 +498,7 @@ void write_contour_file() {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(f, "%d\n", N_pinning * 3);
+    fprintf(f, "%d\n", N_pinning);
 
     for (int i = 0; i < N_pinning; i++) {
         fprintf(f, "%e\n", pinnings[i].coord.x);
@@ -450,31 +506,31 @@ void write_contour_file() {
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
-        if (pinnings[i].sinfi == 0.0) {
-            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].coord.y);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-
-            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].coord.y);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-        } else {
-            fprintf(f, "%e\n", pinnings[i].coord.x);
-            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLy2);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-
-            fprintf(f, "%e\n", pinnings[i].coord.x);
-            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLy2);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-        }
+//        if (pinnings[i].sinfi == 0.0) {
+//            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].coord.y);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//
+//            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].coord.y);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//        } else {
+//            fprintf(f, "%e\n", pinnings[i].coord.x);
+//            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLy2);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//
+//            fprintf(f, "%e\n", pinnings[i].coord.x);
+//            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLy2);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//        }
     }
     fclose(f);
     printf("Contour file written with %d circles\n", N_pinning * 3);
@@ -506,7 +562,8 @@ void end() {
     printf("Program ended: %s\n", asctime(localtime(&time_end)));
     timeDiff = difftime(time_end, time_begin);
     printf("Program ran: %.2f seconds, %.2f minutes.\n", timeDiff, timeDiff / 60);
-    fprintf(statistics_file, "Nr.Partic %d, System size: %.2f,\nProgram ran: %.2f seconds, %.2f minutes.\n", N_particles, sX,
+    fprintf(statistics_file, "Nr.Partic %d, System size: %.2f,\nProgram ran: %.2f seconds, %.2f minutes.\n",
+            N_particles, sX,
             timeDiff, timeDiff / 60);
 }
 
@@ -545,9 +602,9 @@ int main(int argc, char *argv[]) {
 
     start();
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 1.0, 3000, 0.15);
-    ///inicializalas Particle: N, sX+sY, dt, r, rv
-    init(200, 40.0, 0.002, 4.0, 6.0);
+    initPinning(10, 10, 5.0, 5.0, 1.0, 1.0, 0.5, 0.1, 0.01);
+    ///inicializalas Particle: N_particles, sX+sY, dt, r, rv
+    init(N_pinning, 40.0, 0.002, 4.0, 6.0);
 
     initPinningSites();
 //    for (int i = 0; i < N_pinning; i++) {
@@ -556,11 +613,12 @@ int main(int argc, char *argv[]) {
 //    }
 
     write_contour_file();
-    initParticles();
+    // initParticles();
+    initSquareParticles();
 //    for (int i = 0; i < N_particles; i++) {
 //        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
 //    }
-//
+
     buildVerletList();
 
     moviefile = fopen(filename, "wb");
@@ -570,11 +628,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (t = 0; t < 10000; t++) {
-        calculatePairwiseForcesWithVerlet();
-//        calculatePairwiseForces();
-
-        calculateExternalForces();
+    for (t = 0; t < 1000000; t++) {
+//        calculatePairwiseForcesWithVerlet();
+////        calculatePairwiseForces();
+//        calculateExternalForces();
+        calculateThermalForces();
         calculatePinningForces();
         write_statistics();
         moveParticles();
