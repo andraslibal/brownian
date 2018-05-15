@@ -388,7 +388,7 @@ void initHexaVerteces()
 
     sqrt3 = sqrt(3);
     x = 0.0;
-    y = pin_length * sqrt3 / 2;
+    y = pinning_lattice_ax * sqrt3 / 2;
     k = 0;
 
     for (i = 0; i < pinning_lattice_Nx; i++)
@@ -518,7 +518,7 @@ void initHexaPinningSites()
 
     sqrt3 = sqrt(3);
     x = 0.0;
-    y = pin_length * sqrt3 / 2;
+    y = pinning_lattice_ax * sqrt3 / 2;
     k = 0;
 
 	for (i = 0; i < pinning_lattice_Nx; i++)
