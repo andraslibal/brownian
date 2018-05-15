@@ -71,6 +71,8 @@ double *cos_fi;
 double *sin_fi;
 // particles ID in pinning site
 int* particle_ID;
+// verteces near the pinning site
+int** verteces_id_near_pinning_site;
 
 // number of verteces
 int N_vertex;
@@ -81,6 +83,10 @@ double* y_vertex;
 int* vertex_type;
 // vertex color
 int* vertex_color;
+// number of neighbors for the vertex
+int* vertex_neighbor_number;
+// neighbor pinning site's id
+int** vertex_neighbor_id;
 
 // temperature
 double T;
@@ -174,14 +180,16 @@ void initParticles()
 
 void initArraysForPinningSites(int multiplier)
 {
+    int i;
+
     r_pinning_site = 0.2;
     half_length_pinning_site = 0.6;
     K_max_pinning_site = 2.0;
     K_middle_pinning_site = 0.1;
     T = 1.0;
 
-	pinning_lattice_Nx = 10;
-    pinning_lattice_Ny = 10;
+	pinning_lattice_Nx = 2;
+    pinning_lattice_Ny = 4;
 	pinning_lattice_ax = 2.0;
     pinning_lattice_ay = 2.0;
 
@@ -214,15 +222,23 @@ void initArraysForPinningSites(int multiplier)
     sin_fi = new double[N_pinning_sites];
     cos_fi = new double[N_pinning_sites];
 
+    verteces_id_near_pinning_site = new int*[N_pinning_sites];
+    for (i = 0; i < N_pinning_sites; i++)
+        verteces_id_near_pinning_site[i] = new int[2];
+
     // init verteces array
     x_vertex = new double[N_vertex];
     y_vertex = new double[N_vertex];
     vertex_color = new int[N_vertex];
     vertex_type = new int[N_vertex];
+    vertex_neighbor_number = new int[N_vertex];
+    vertex_neighbor_id = new int*[N_vertex];
 }
 
 void freeData()
 {
+    int i;
+
     delete[] ID;
     delete[] x;
     delete[] y;
@@ -239,12 +255,21 @@ void freeData()
     delete[] sin_fi;
     delete[] particle_ID;
 
+    for (i = 0; i < N_pinning_sites; i++)
+        delete[] verteces_id_near_pinning_site[i];
+    delete[] verteces_id_near_pinning_site;
+
     delete[] tabulated_force;
 
     delete[] x_vertex;
     delete[] y_vertex;
     delete[] vertex_color;
     delete[] vertex_type;
+    delete[] vertex_neighbor_number;
+
+    for (i = 0; i < N_vertex; i++)
+        delete[] vertex_neighbor_id[i];
+    delete[] vertex_neighbor_id;
 }
 
 void generateCoordinates()
@@ -354,7 +379,7 @@ void putParticleInPinningSite()
     }
 }
 
-void initSquarVerteces()
+void initSquareVerteces()
 {
     int i, j, k;
     double x, y;
@@ -362,19 +387,43 @@ void initSquarVerteces()
     x = y = 0.0;
     k = 0;
 
-    for (i = 0; i < pinning_lattice_Nx; i++)
+    for (i = 0; i < pinning_lattice_Ny; i++)
 	{
         x = 0.0;
-        for (j = 0; j < pinning_lattice_Ny; j++)
+        for (j = 0; j < pinning_lattice_Nx; j++)
         {
             x_vertex[k] = x;
             y_vertex[k] = y;
             vertex_type[k] = 0;
-            vertex_color[k++] = 4;
+            vertex_color[k] = 4;
 
+            vertex_neighbor_number[k] = 4;
+            vertex_neighbor_id[k] = new int[vertex_neighbor_number[k]];
+            if (i == 0) {
+                vertex_neighbor_id[k][1] = 2 * (pinning_lattice_Nx * pinning_lattice_Ny - j) - 1;
+            } else {
+                if (j == 0) {
+                    vertex_neighbor_id[k][1] = i * pinning_lattice_Nx * 2 - 1;
+                } else {
+                    vertex_neighbor_id[k][1] = 2 * ((i - 1) * pinning_lattice_Nx) + 1;
+                }
+            }
+            vertex_neighbor_id[k][0] = 2 * k;
+            if (j == 0) {
+                vertex_neighbor_id[k][2] = pinning_lattice_Nx * 2 * (i + 1) - 1;
+                vertex_neighbor_id[k][3] = pinning_lattice_Nx * 2 * (i + 1) - 2;
+            } else  {
+                vertex_neighbor_id[k][2] = 2 * (pinning_lattice_Nx * i + j - 1);
+                vertex_neighbor_id[k][3] = 2 * (pinning_lattice_Nx * i + j - 1) + 1;
+            }
             x += pinning_lattice_ax;
+            k++;
         }
         y += pinning_lattice_ay;
+    }
+
+    for (i = 0; i < N_vertex; i++) {
+        cout << i << ": " << vertex_neighbor_id[i][0] << " " << vertex_neighbor_id[i][1] << " " << vertex_neighbor_id[i][2] <<" " << vertex_neighbor_id[i][3] << endl;
     }
     
     printf("Init square verteces complet\n");
@@ -482,13 +531,16 @@ void initSquarePinningSites()
 
     initArraysForPinningSites(2);
 
-	for (i = 0; i < pinning_lattice_Nx; i++)
+	for (i = 0; i < pinning_lattice_Ny; i++)
 	{
         x = pinning_lattice_ax / 2;
-        for (j = 0; j < pinning_lattice_Ny; j++)
+        for (j = 0; j < pinning_lattice_Nx; j++)
         {
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
+            
+            verteces_id_near_pinning_site[k][0] = i * pinning_lattice_Nx + j;
+            verteces_id_near_pinning_site[k][1] = j == pinning_lattice_Nx - 1 ? i * pinning_lattice_Nx : i * pinning_lattice_Nx + j + 1;
 
             sin_fi[k] = 0.0;
             cos_fi[k++] = 1.0;
@@ -497,10 +549,23 @@ void initSquarePinningSites()
             y += pinning_lattice_ay / 2;
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
+            
+            verteces_id_near_pinning_site[k][0] = j == pinning_lattice_Nx - 1 ? i * pinning_lattice_Nx : i * pinning_lattice_Nx + j + 1;
+            if (i == pinning_lattice_Ny - 1)
+                if (j == pinning_lattice_Nx - 1)
+                    verteces_id_near_pinning_site[k][1] = 0;
+                else
+                    verteces_id_near_pinning_site[k][1] = j + 1;
+            else
+                if (j == pinning_lattice_Nx - 1)
+                    verteces_id_near_pinning_site[k][1] = (i + 1) * pinning_lattice_Nx;
+                else
+                    verteces_id_near_pinning_site[k][1] = (i + 1) * pinning_lattice_Nx + j + 1;
 
             sin_fi[k] = 1.0;
             cos_fi[k++] = 0.0;
 
+            x += pinning_lattice_ax / 2;
             y -= pinning_lattice_ay / 2;
         }
         y += pinning_lattice_ay;
@@ -580,6 +645,11 @@ void initHexaPinningSites()
         }
         y += pinning_lattice_ay * sqrt3;
 	}
+}
+
+void calculateVertexType()
+{
+
 }
 
 void calculateTabulatedForces() 
@@ -998,8 +1068,8 @@ int main(int argc, char* argv[])
 
     f = fopen(moviefile, "wb");
 
-    initHexaPinningSites();
-    initHexaVerteces();
+    initSquarePinningSites();
+    initSquareVerteces();
     initParticles();
     writeGfile();
     cout << "Sx = " << Sx << endl;
