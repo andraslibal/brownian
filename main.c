@@ -1,6 +1,76 @@
 #include "data.h"
 #include <errno.h>
-//#include "random_numrec.h"
+#include <stdint.h>
+#include <math.h>
+
+uint64_t int64();
+void setseed(uint64_t seedmodifiervalue);
+double Rand(void);
+double gasdev(void);
+
+uint64_t u, v, w;
+double norm_num;
+int norm_saved;
+
+/***************************************************
+	int64_t
+***************************************************/
+inline uint64_t int64()
+{
+    uint64_t x;
+    u = u * 2862933555777941757LL + 7046029254386353087LL;
+    v ^= v >> 17; v ^= v << 31; v ^= v >> 8;
+    w = 4294957665U*(w & 0xffffffff) + (w >> 32);
+    x = u ^ (u << 21); x ^= x >> 35; x ^= x << 4;
+    return (x + v) ^ w;
+}
+
+/***************************************************
+	setSeed
+***************************************************/
+inline void setseed(uint64_t seedmodifiervalue)
+{
+    v = 4101842887655102017LL;
+    w = 1;
+    u = seedmodifiervalue ^ v; int64();
+    v = u; int64();
+    w = v; int64();
+    norm_saved = 0;
+}
+
+/***************************************************
+	uniform distribution
+***************************************************/\
+inline double Rand()
+{
+    return 5.42101086242752217E-20 * int64();
+}
+
+/***************************************************
+	gaussian distribution
+***************************************************/
+inline double gasdev()
+{
+    double x1, x2, w;
+    if(!norm_saved)
+    {
+        do
+        {
+            x1 = 2.0 * Rand() - 1.0;
+            x2 = 2.0 * Rand() - 1.0;
+            w = x1 * x1 + x2 * x2;
+        } while(w >= 1.0 || w == 0);
+        w = sqrt((-2.0 * log(w)) / w);
+        norm_num = x1 * w;
+        norm_saved = 1;
+        return (x2 * w);
+    }
+    else
+    {
+        norm_saved = 0;
+        return norm_num;
+    }
+}
 
 //elore kiszamolt f/r, hogy a reszecskek egymasra hataskor ne kelljen szamolni, csak kiszedni a listabol az erteket
 void tabulateForces() {
@@ -76,6 +146,10 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
         exit(EXIT_FAILURE);
     }
 
+    //temperature
+    temperature = 3.0;
+    printf("T=%.2lf\n", temperature);
+
     tabulateForces();
     printf("General Init done!\n N_particles=%d N_pinning=%d,sX=%.2f sY=%.2f\n", N_particles, N_pinning, sX, sY);
 }
@@ -101,6 +175,7 @@ void initPinning(int nrX, int nrY, double distX, double distY, double lx2, doubl
     pinningFMax = fmax;
     pinningMiddleHeight = middleHeight;
     pinningK = pinningFMax / pinningR;
+
     printf("Init Pinning done,with\nNpinning=%d, nX=%d,nY=%d,latticeX=%.2f,latticeY=%.2f\n", N_pinning, pinningNX,
            pinningNY, pinningDistX, pinningDistY);
 }
@@ -252,9 +327,12 @@ void initPinningSites() {
 void calculateThermalForces() {
     double fx, fy;
     for (int i = 0; i < N_particles; i++) {
-        fx = 10.0 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
-        fy = 10.5 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
-        particles[i].fx += fx;
+        //fx = 10.0 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        //fy = 10.5 * ((rand() / (RAND_MAX + 1.0)) - 0.5);
+        fx = temperature * gasdev();//((rand() / (RAND_MAX + 1.0)) - 0.5);
+        fy = temperature * gasdev();//((rand() / (RAND_MAX + 1.0)) - 0.5);
+        
+	particles[i].fx += fx;
         particles[i].fy += fy;
 //        printf("fx %.2lf fy %.2lf\n",fx,fy);
     }
@@ -602,7 +680,7 @@ int main(int argc, char *argv[]) {
 
     start();
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(20, 20, 2.0, 2.0, 0.6, 1.0, 0.3, 0.2, 0.05);
+    initPinning(20, 20, 2.0, 2.0, 1.0, 0.2, 0.2, 2.0, 0.05);
     ///inicializalas Particle: N_particles, sX+sY, dt, r, rv
     init(N_pinning, 40.0, 0.002, 4.0, 6.0);
 
@@ -624,7 +702,7 @@ int main(int argc, char *argv[]) {
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
-        printf(stderr, "Failed to open file.\n");
+        //printf(stderr, "Failed to open file.\n");
         return 1;
     }
 

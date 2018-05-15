@@ -16,6 +16,9 @@ double dt;              //length of a single time step
 Particle *particles;    //list of particle
 int t;                  //time
 
+//temperature
+double temperature;
+
 ///Pinning
 int N_pinning;              //number of pinnings
 Pinning *pinnings;
