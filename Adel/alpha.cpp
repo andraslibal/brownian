@@ -53,11 +53,16 @@ double tab_measure;
 
 // number of pinning sites
 int N_pinning_sites;
+// radius of a pinning site
 double r_pinning_site;
 double half_length_pinning_site;
+// pinning site's length
 double pin_length;
-double K_max_pinning_sites;
-double K;
+// forces in pinning site
+// in the ends of the pinning site
+double K_max_pinning_site;
+// in middle
+double K_middle_pinning_site;
 // coordinates of pinning sites (center)
 double *x_pinning_site;
 double *y_pinning_site;
@@ -66,6 +71,19 @@ double *cos_fi;
 double *sin_fi;
 // particles ID in pinning site
 int* particle_ID;
+
+// number of verteces
+int N_vertex;
+// coordinates of verteces
+double* x_vertex;
+double* y_vertex;
+// vertex type
+int* vertex_type;
+// vertex color
+int* vertex_color;
+
+// temperature
+double T;
 
 int	pinning_lattice_Nx, pinning_lattice_Ny;
 double pinning_lattice_ax, pinning_lattice_ay;
@@ -114,7 +132,8 @@ void readDataFromFile(const char* filename)
     f.close();
 }
 
-void initSize() {
+void initSize()
+{
     strcpy(moviefile, "moviefile.mvi");
     Sx = 320.0;
     Sy = 320.0;
@@ -144,7 +163,7 @@ void initParticles()
 
     dt = 0.01;
     current_time = 0;
-    total_time = 100000;
+    total_time = 300000;
     time_echo = 500;
 
     rebuild_verlet_flag = 1;
@@ -155,15 +174,16 @@ void initParticles()
 
 void initArraysForPinningSites(int multiplier)
 {
-    r_pinning_site = 1.0;
-    half_length_pinning_site = 1.0;
-    K_max_pinning_sites = 2.0;
-    K = 0.2;
+    r_pinning_site = 0.2;
+    half_length_pinning_site = 0.6;
+    K_max_pinning_site = 2.0;
+    K_middle_pinning_site = 0.1;
+    T = 1.0;
 
-	pinning_lattice_Nx = 4;
-    pinning_lattice_Ny = 4;
-	pinning_lattice_ax = 5.0;
-    pinning_lattice_ay = 5.0;
+	pinning_lattice_Nx = 10;
+    pinning_lattice_Ny = 10;
+	pinning_lattice_ax = 2.0;
+    pinning_lattice_ay = 2.0;
 
     // calculating the system's size depending on the number of pinning sites
     pin_length = 2 * (half_length_pinning_site + r_pinning_site);
@@ -172,11 +192,13 @@ void initArraysForPinningSites(int multiplier)
     {
         Sx = pinning_lattice_Nx * pinning_lattice_ax;
         Sy = pinning_lattice_Ny * pinning_lattice_ay;
+        N_vertex = pinning_lattice_Nx * pinning_lattice_Ny;
     } else 
     if (multiplier == 6)
     {
         Sx = pinning_lattice_Nx * pinning_lattice_ax * 3;
         Sy = pinning_lattice_Ny * pinning_lattice_ay * sqrt(3);
+        N_vertex = pinning_lattice_Nx * pinning_lattice_Ny * 4;
     }
     Sx_2 = Sx / 2;
     Sy_2 = Sy / 2;
@@ -192,6 +214,11 @@ void initArraysForPinningSites(int multiplier)
     sin_fi = new double[N_pinning_sites];
     cos_fi = new double[N_pinning_sites];
 
+    // init verteces array
+    x_vertex = new double[N_vertex];
+    y_vertex = new double[N_vertex];
+    vertex_color = new int[N_vertex];
+    vertex_type = new int[N_vertex];
 }
 
 void freeData()
@@ -205,17 +232,29 @@ void freeData()
     delete[] q;
     delete[] x_so_far;
     delete[] y_so_far;
+
+    delete[] x_pinning_site;
+    delete[] y_pinning_site;
+    delete[] cos_fi;
+    delete[] sin_fi;
+    delete[] particle_ID;
+
+    delete[] tabulated_force;
+
+    delete[] x_vertex;
+    delete[] y_vertex;
+    delete[] vertex_color;
+    delete[] vertex_type;
 }
 
 void generateCoordinates()
 {
     int i, j;
+    double tmpX, tmpY;
+    double diffX, diffY, diffSquare;
     for (i = 0; i < N; i++)
     {
         ID[i] = i;
-
-        double tmpX;
-        double tmpY;
         do {
             // choose a random position in the system for the particle
             tmpX = Sx * Rand();
@@ -223,15 +262,15 @@ void generateCoordinates()
             // checking if in this position there already is an element
             for (j = 0; j < i; j++)
             {
-                double diffX = x[j] - tmpX;
-                double diffY = y[j] - tmpY;
+                diffX = x[j] - tmpX;
+                diffY = y[j] - tmpY;
 
                 if (diffX > Sx_2) diffX -= Sx;
                 if (diffX < -Sx_2) diffX += Sx;
                 if (diffY > Sy_2) diffY -= Sy;
                 if (diffY < -Sy_2) diffY += Sy;
 
-                double diffSquare = diffX * diffX + diffY * diffY;
+                diffSquare = diffX * diffX + diffY * diffY;
                 if (diffSquare < 0.2 * 0.2) // the distance between two particles has to 
                                             // be bigger then 0.2
                     break;
@@ -274,12 +313,27 @@ void putParticleInPinningSite()
     int i;
     for (i = 0; i < N_pinning_sites; i++)
     {
-        ID[i] = i;
-
-        x[i] = x_pinning_site[i];
-        y[i] = y_pinning_site[i];
-
-        particle_ID[i] = ID[i];
+        particle_ID[i] = ID[i] = i;
+        
+        if (Rand() > 0.5) {
+            if (cos_fi[i] == 1.0) {
+                x[i] = x_pinning_site[i] - half_length_pinning_site;
+                y[i] = y_pinning_site[i];
+            } else
+                if (cos_fi[i] == 0.0) {
+                    x[i] = x_pinning_site[i];
+                    y[i] = y_pinning_site[i] - half_length_pinning_site;
+                }
+        } else {
+            if (cos_fi[i] == 1.0) {
+                x[i] = x_pinning_site[i] + half_length_pinning_site;
+                y[i] = y_pinning_site[i];
+            } else
+                if (cos_fi[i] == 0.0) {
+                    x[i] = x_pinning_site[i];
+                    y[i] = y_pinning_site[i] + half_length_pinning_site;
+                }
+        }
 
         color[i] = 1;
         q[i] = 1.0;
@@ -292,14 +346,38 @@ void putParticleInPinningSite()
     }
 }
 
+void initSquarVerteces()
+{
+    int i, j, k;
+    double x, y;
+
+    x = y = 0.0;
+    k = 0;
+
+    for (i = 0; i < pinning_lattice_Nx; i++)
+	{
+        x = 0.0;
+        for (j = 0; j < pinning_lattice_Ny; j++)
+        {
+            x_vertex[k] = x;
+            y_vertex[k] = y;
+            vertex_color[k++] = 4;
+
+            x += pinning_lattice_ax;
+        }
+        y += pinning_lattice_ay;
+    }
+
+}
+
 void initPinningSites()
 {
+    int i, j;
+    double tmpX, tmpY;
+    double diffX, diffY, diffSquare;
     initArraysForPinningSites(1);
-	for (int i = 0; i < N_pinning_sites; i++)
-	{
-		int j;
-        double tmpX;
-        double tmpY;
+	for (i = 0; i < N_pinning_sites; i++)
+	{   
         do {
             // choose a random position in the system for the pinning site
             tmpX = Sx * Rand();
@@ -307,15 +385,15 @@ void initPinningSites()
             // checking if in this position there already is an element
             for (j = 0; j < i; j++)
             {
-                double diffX = x_pinning_site[j] - tmpX;
-                double diffY = y_pinning_site[j] - tmpY;
+                diffX = x_pinning_site[j] - tmpX;
+                diffY = y_pinning_site[j] - tmpY;
 
                 if (diffX > Sx_2) diffX -= Sx;
                 if (diffX < -Sx_2) diffX += Sx;
                 if (diffX > Sy_2) diffX -= Sy;
                 if (diffX < -Sy_2) diffX += Sy;
 
-                double diffSquare = diffX * diffX + diffY * diffY;
+                diffSquare = diffX * diffX + diffY * diffY;
                 if (diffSquare < 2.2 * 2.2) // the distance between two particles has to 
                                             // be bigger then 2.2
                     break;
@@ -338,8 +416,7 @@ void initSquarePinningSites()
     double x, y, ax, ay;
     int i, j, k;
 
-    x = 0.0;
-    y = 0.0;
+    x = y = 0.0;
     k = 0;
 
     initArraysForPinningSites(2);
@@ -353,16 +430,16 @@ void initSquarePinningSites()
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
-            sin_fi[k] = 0;
-            cos_fi[k++] = 1;
+            sin_fi[k] = 0.0;
+            cos_fi[k++] = 1.0;
 
             x += pinning_lattice_ax / 2;
             y += pinning_lattice_ay / 2;
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
-            sin_fi[k] = 1;
-            cos_fi[k++] = 0;
+            sin_fi[k] = 1.0;
+            cos_fi[k++] = 0.0;
 
             y -= pinning_lattice_ay / 2;
         }
@@ -385,6 +462,7 @@ void initHexaPinningSites()
     k = 0;
 
     initArraysForPinningSites(6);
+
 	for (i = 0; i < pinning_lattice_Nx; i++)
 	{
         x = pinning_lattice_ax / 2;
@@ -393,8 +471,8 @@ void initHexaPinningSites()
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
-            sin_fi[k] = 0;
-            cos_fi[k++] = 1;
+            sin_fi[k] = 0.0;
+            cos_fi[k++] = 1.0;
 
             x += 3 * pinning_lattice_ax / 4;
             y += pinning_lattice_ay * sqrt3 / 4;
@@ -419,8 +497,8 @@ void initHexaPinningSites()
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
-            sin_fi[k] = 0;
-            cos_fi[k++] = 1;
+            sin_fi[k] = 0.0;
+            cos_fi[k++] = 1.0;
 
             x += 3 * pinning_lattice_ax / 4;
             y += pinning_lattice_ay * sqrt3 / 4;
@@ -448,11 +526,16 @@ void initHexaPinningSites()
 
 void calculateTabulatedForces() 
 {
-    double r = 0.1;
-    double r2 = r * r;
+    int i;
+    double r, r2;
+
+    r = 0.1;
+    r2 = r * r;
+
     tab_measure = (r_verlet * r_verlet - r2) / (N_tabulate - 1.0);
     tab_start = r;
-    for (int i = 0; i < N_tabulate; i++) {
+
+    for (i = 0; i < N_tabulate; i++) {
         tabulated_force[i] = exp(- r / r0) / r2 * r;
         r2 += tab_measure;
         r = sqrt(r2);
@@ -461,27 +544,30 @@ void calculateTabulatedForces()
 
 void calculateVerletList()
 {
+    int i, j;
+    double diffX, diffY, distance;
+
 	// clearing previous data from verlet list
-    for (int i = 0; i < verlet.size(); i++)
+    for (i = 0; i < verlet.size(); i++)
         verlet.at(i).clear();
     verlet.clear();
 
     // iterating through the particles
-    for (int i = 0; i < N; i++)
+    for (i = 0; i < N; i++)
     {
-        for (int j = i + 1; j < N; j++)
+        for (j = i + 1; j < N; j++)
         {
-            double diffX = x[i] - x[j];
-            double diffY = y[i] - y[j];
+            diffX = x[i] - x[j];
+            diffY = y[i] - y[j];
 
             if (diffX < -Sx_2) diffX += Sx;
             if (diffX > Sx_2) diffX -= Sx;
-            if (diffY < Sy_2) diffY += Sy;
+            if (diffY < -Sy_2) diffY += Sy;
             if (diffY > Sy_2) diffY -= Sy;
 
-            double distance = diffX * diffX + diffY * diffY;
+            distance = diffX * diffX + diffY * diffY;
 
-            // if they are closer than a specified value, that means that they are in interaction so I put the in the verlet list
+            // if they are closer than a specified value, that means that they are in interaction so I put them in the verlet list
             // one pair will be just once in that list
             if (distance < r_verlet * r_verlet)
             {
@@ -495,7 +581,7 @@ void calculateVerletList()
     }
 
     //clear all accumulated distances
-    for (int i = 0; i < N; i++)
+    for (i = 0; i < N; i++)
     {
         x_so_far[i] = 0.0;
         y_so_far[i] = 0.0;
@@ -503,17 +589,21 @@ void calculateVerletList()
 
     //clear rebuild flag
     rebuild_verlet_flag = 0;
+    
+    printf("Verlet list built\n");
+    fflush(stdout);
 }
 
 void colorVerlet()
 {
-    for(int i = 0; i < N; i++)
+    int i;
+    for(i = 0; i < N; i++)
     {
-        if (q[i] == -1) color[i] = 0;        
-        if (q[i] == 1) color[i] = 1;
+        if (q[i] == -1.0) color[i] = 0;        
+        if (q[i] == 1.0) color[i] = 1;
     }
 
-    for(int i = 0; i < verlet.size(); i++)
+    for(i = 0; i < verlet.size(); i++)
     {
         if (verlet.at(i).at(0) == 30) color[verlet.at(i).at(1)] = 2;
         if (verlet.at(i).at(1) == 30) color[verlet.at(i).at(0)] = 2;
@@ -522,26 +612,27 @@ void colorVerlet()
 
 void calculateForces()
 {
+    int it, i, j, tab_index;
     double f;
+    double diffX, diffY, distance;
 
-    for (int it = 0; it < verlet.size(); it++)
+    for (it = 0; it < verlet.size(); it++)
     {
 
-        int i = verlet.at(it).at(0);
-        int j = verlet.at(it).at(1);
+        i = verlet.at(it).at(0);
+        j = verlet.at(it).at(1);
         
-        double diffX = x[i] - x[j];
-        double diffY = y[i] - y[j];
+        diffX = x[i] - x[j];
+        diffY = y[i] - y[j];
 
         if (diffX < -Sx_2) diffX += Sx;
         if (diffX > Sx_2) diffX -=Sx;
         if (diffY < -Sy_2) diffY += Sy;
         if (diffY > Sy_2) diffY -= Sy;
 
-        double distance = diffX * diffX + diffY * diffY;
-        int tab_index;
-        if (distance < 0.1) tab_index=0;
-        else tab_index = (int)floor((distance-tab_start)/tab_measure);
+        distance = diffX * diffX + diffY * diffY;
+        if (distance < 0.1) tab_index = 0;
+        else tab_index = (int) floor((distance - tab_start) / tab_measure);
   
         if (tab_index >= 50000) f = 0.0;
         else f = tabulated_force[tab_index];
@@ -561,37 +652,102 @@ void calculateExternalForces()
     }
 }
 
+void calculateThermalForce()
+{
+    int i;
+    for (i = 0; i < N; i++)
+    {
+        fx[i] += gasdev() * T;
+        fy[i] += gasdev() * T;
+    }
+}
+
 void calculatePinningSitesForce() 
 {
-	for (int i = 0; i < N; i++)
+    int i, j;
+    double diffX, diffY, distance, f;
+	for (i = 0; i < N; i++)
 	{
-		for (int j = 0; j < N_pinning_sites; j++)
+		for (j = 0; j < N_pinning_sites; j++)
 		{
-			double diffX = x[i] - x_pinning_site[j];
-			double diffY = y[i] - y_pinning_site[j];
+			diffX = x[i] - x_pinning_site[j];
+			diffY = y[i] - y_pinning_site[j];
 
 			if (diffX < -Sx_2) diffX += Sx;
 	        if (diffX > Sx_2) diffX -=Sx;
 	        if (diffY < -Sy_2) diffY += Sy;
 	        if (diffY > Sy_2) diffY -= Sy;
 
-        	double distance = diffX * diffX + diffY * diffY;
+        	distance = diffX * diffX + diffY * diffY;
         	if (distance < r_pinning_site * r_pinning_site)
         	{
-        		double f = K_max_pinning_sites / r_pinning_site;
-        		fx[i] += -f * diffX;
-        		fy[i] += -f * diffY;
+        		f = K_max_pinning_site / r_pinning_site;
+        		fx[i] -= f * diffX;
+        		fy[i] -= f * diffY;
         	}
 		}
 	}
 }
 
+void calculateModifiedPinningiteForces()
+{
+    int i, j;
+    double diffX, diffY, distance;
+    double x_rotated, y_rotated;
+    double fx_rotated, fy_rotated;
+    double f;
+    for (i = 0; i < N_pinning_sites; i++)
+    {
+        j = particle_ID[i];
+
+        diffX = x[j] - x_pinning_site[i];
+        diffY = y[j] - y_pinning_site[i];
+
+        if (diffX < -Sx_2) diffX += Sx;
+        if (diffX > Sx_2) diffX -= Sx;
+        if (diffY < -Sy_2) diffY += Sy;
+        if (diffY > Sy_2) diffY -= Sy;
+
+        x_rotated = diffX * cos_fi[i] + diffY * sin_fi[i];
+        y_rotated = -diffX * sin_fi[i] + diffY * cos_fi[i];
+
+        if (x_rotated > half_length_pinning_site) 
+        {
+            x_rotated = x_rotated - half_length_pinning_site;
+            fx_rotated = -K_max_pinning_site * x_rotated;
+            fy_rotated = -K_max_pinning_site * y_rotated;
+
+        } else
+        if (x_rotated < -half_length_pinning_site) 
+        {
+            x_rotated = x_rotated + half_length_pinning_site;
+            fx_rotated = -K_max_pinning_site * x_rotated;
+            fy_rotated = -K_max_pinning_site * y_rotated;
+        } else {
+            fx_rotated = K_middle_pinning_site * x_rotated;
+            fy_rotated = -K_max_pinning_site * y_rotated;
+        }
+
+        fx[j] += fx_rotated * cos_fi[i] - fy_rotated * sin_fi[i];
+        fy[j] += fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
+        
+        // circle shaped
+        //fx[j] += -K_max_pinning_site *diffX;
+        //fy[j] += -K_max_pinning_site *diffY;
+    }
+}
+
 void moveParticles()
 {
+    int i;
     double deltax, deltay;
+    double maxfx = 0.0, maxfy = 0.0;
 
-    for (int i = 0; i < N; i++) 
+    for (i = 0; i < N; i++) 
     {
+        maxfx = maxfx < fx[i] ? fx[i] : maxfx;
+        maxfy = maxfy < fy[i] ? fy[i] : maxfy;
+
         deltax = fx[i] * dt;
         deltay = fy[i] * dt;
 
@@ -614,6 +770,7 @@ void moveParticles()
         fx[i] = 0.0;
         fy[i] = 0.0;
     }
+    // cout << maxfx << " " << maxfy << endl;
 }
 
 void writeToFile(char* filename)
@@ -711,7 +868,8 @@ void writeContourFile()
 	}
     f.close();
     
-    printf("Written the contour file\n");fflush(stdout);
+    printf("Written the contour file\n");
+    fflush(stdout);
 }
 
 void writeCmovie(FILE* moviefile, int t)
@@ -720,7 +878,7 @@ void writeCmovie(FILE* moviefile, int t)
     float floatholder;
     int intholder;
 
-    intholder = N;
+    intholder = N + N_vertex;
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     intholder = t;
@@ -730,13 +888,27 @@ void writeCmovie(FILE* moviefile, int t)
     {
         intholder = color[i] + 2;
         fwrite(&intholder, sizeof(int), 1, moviefile);
-        intholder = ID[i];//ID
+        intholder = ID[i]; //ID
         fwrite(&intholder, sizeof(int), 1, moviefile);
         floatholder = (float)x[i];
         fwrite(&floatholder, sizeof(float), 1, moviefile);
         floatholder = (float)y[i];
         fwrite(&floatholder, sizeof(float), 1, moviefile);
-        floatholder = 1.0;//cum_disp, cmovie format
+        floatholder = 1.0; //cum_disp, cmovie format
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+    }
+
+    for (i = 0; i < N_vertex; i++)
+    {
+        intholder = vertex_color[i] + 2;
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        intholder = N + i; //ID
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        floatholder = (float)x_vertex[i];
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = (float)y_vertex[i];
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = 1.0; //cum_disp, cmovie format
         fwrite(&floatholder, sizeof(float), 1, moviefile);
     }
 }
@@ -745,8 +917,8 @@ void writeGfile()
 {
     ofstream f("../Plotter/gfile");
 
-    f << "set xrange -5 " << (int) Sx << endl;
-    f << "set yrange -5 " << (int) Sy << endl;
+    f << "set xrange -5 " << (int) Sx + 5 << endl;
+    f << "set yrange -5 " << (int) Sy + 5 << endl;
     f << "loadcolormap colors.txt" << endl;
     f << "loadcontour contour.txt" << endl;
     f << "cmovie" << endl;
@@ -768,7 +940,8 @@ int main(int argc, char* argv[])
 
     f = fopen(moviefile, "wb");
 
-    initHexaPinningSites();
+    initSquarePinningSites();
+    initSquarVerteces();
     initParticles();
     writeGfile();
     cout << "Sx = " << Sx << endl;
@@ -793,15 +966,15 @@ int main(int argc, char* argv[])
         if (rebuild_verlet_flag == 1) 
         {
             calculateVerletList();
-            colorVerlet();
+            // colorVerlet();
         }
 
-        calculateForces();
-        calculateExternalForces();
- 
+        // calculateForces();
+        // calculateExternalForces();
+        calculateThermalForce();
+        calculateModifiedPinningiteForces();
 
-        // calculatePinningSitesForce();
-        // moveParticles();
+        moveParticles();
 
         if (current_time % 100 == 0)
             writeCmovie(f, current_time);
