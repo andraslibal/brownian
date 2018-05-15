@@ -5,4 +5,5 @@ CMakeFiles/brownian.dir/main.c.o: data.h
 CMakeFiles/brownian.dir/main.c.o: main.c
 CMakeFiles/brownian.dir/main.c.o: particle.h
 CMakeFiles/brownian.dir/main.c.o: pinning.h
+CMakeFiles/brownian.dir/main.c.o: vertex.h
 

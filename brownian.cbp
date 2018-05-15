@@ -90,6 +90,9 @@
 		<Unit filename="/home/rebeka/Documents/brownian/pinning.h">
 			<Option target="brownian"/>
 		</Unit>
+		<Unit filename="/home/rebeka/Documents/brownian/vertex.h">
+			<Option target="brownian"/>
+		</Unit>
 		<Unit filename="/home/rebeka/Documents/brownian/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

@@ -8,65 +8,69 @@ double norm_num;
 int norm_saved;
 
 void setseed(uint64_t seedmodifiervalue);
+
 double Rand(void);
+
 double gasdev(void);
+
 uint64_t int64();
 
 /***************************************************
 	int64_t
 ***************************************************/
-inline uint64_t int64()
-{
+inline uint64_t int64() {
     uint64_t x;
     u = u * 2862933555777941757LL + 7046029254386353087LL;
-    v ^= v >> 17; v ^= v << 31; v ^= v >> 8;
-    w = 4294957665U*(w & 0xffffffff) + (w >> 32);
-    x = u ^ (u << 21); x ^= x >> 35; x ^= x << 4;
+    v ^= v >> 17;
+    v ^= v << 31;
+    v ^= v >> 8;
+    w = 4294957665U * (w & 0xffffffff) + (w >> 32);
+    x = u ^ (u << 21);
+    x ^= x >> 35;
+    x ^= x << 4;
     return (x + v) ^ w;
 }
 
 /***************************************************
 	setSeed
 ***************************************************/
-inline void setseed(uint64_t seedmodifiervalue)
-{
+inline void setseed(uint64_t seedmodifiervalue) {
     v = 4101842887655102017LL;
     w = 1;
-    u = seedmodifiervalue ^ v; int64();
-    v = u; int64();
-    w = v; int64();
+    u = seedmodifiervalue ^ v;
+    int64();
+    v = u;
+    int64();
+    w = v;
+    int64();
     norm_saved = 0;
 }
 
 /***************************************************
 	uniform distribution
 ***************************************************/\
-inline double Rand()
-{
+
+
+inline double Rand() {
     return 5.42101086242752217E-20 * int64();
 }
 
 /***************************************************
 	gaussian distribution
 ***************************************************/
-inline double gasdev()
-{
+inline double gasdev() {
     double x1, x2, w;
-    if(!norm_saved)
-    {
-        do
-        {
+    if (!norm_saved) {
+        do {
             x1 = 2.0 * Rand() - 1.0;
             x2 = 2.0 * Rand() - 1.0;
             w = x1 * x1 + x2 * x2;
-        } while(w >= 1.0 || w == 0);
+        } while (w >= 1.0 || w == 0);
         w = sqrt((-2.0 * log(w)) / w);
         norm_num = x1 * w;
         norm_saved = 1;
         return (x2 * w);
-    }
-    else
-    {
+    } else {
         norm_saved = 0;
         return norm_num;
     }
@@ -93,7 +97,7 @@ void tabulateForces() {
 //    printf("%5d %.2f %.2f %.2f %.8f\n", N_tabulated - 1, x, x2, f, tabulated_f_per_r[N_tabulated - 1]);
 }
 
-//alapbeallitasok, Particle,system,verlet,tabulated force
+//alapbeallitasok, Particle,system,verlet,tabulated force, temperature, Vertexszam
 void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff, double temp) {
     N_particles = nrParticles;
     particles = NULL;
@@ -125,7 +129,7 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
 
     //mozgatas-homerseklet
     temperature = temp;
-    printf("T=%.2lf\n",temperature);
+    printf("T=%.2lf\n", temperature);
 
     //Verlet list
     ////N_verlet= (pi*rv^2*N^2)/(2*sX*sY)
@@ -152,7 +156,18 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     }
 
     tabulateForces();
-    printf("General Init done!\n N_particles=%d N_pinning=%d,sX=%.2f sY=%.2f\n", N_particles, N_pinning, sX, sY);
+
+    ///Vertex
+    N_vertex = pinningNX * pinningNY;
+    vertex = (Vertex *) malloc(N_vertex * sizeof(Vertex));
+    if (!vertex) {
+        perror("Allocation problem! Vertex");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("General Init done!\n N_particles=%d N_pinning=%d, N_vertex=%d, sX=%.2f sY=%.2f\n", N_particles, N_pinning,
+           N_vertex, sX, sY);
+
 }
 
 void initPinning(int nrX, int nrY, double distX, double distY, double lx2, double ly2, double r, double fmax,
@@ -237,13 +252,13 @@ void initParticles() {
 void initSquareParticles() {
     for (int i = 0; i < N_pinning; i++) {
         particles[i].id = i;
-        particles[i].color = 3; //color
+        particles[i].color = 1; //color
         particles[i].q = 1;
         particles[i].coord.x = pinnings[i].coord.x;
         particles[i].coord.y = pinnings[i].coord.y;
         //printf("partx %.2f,party %.2f pinx %.2f piny %.2f\n", particles[i].coord.x, particles[i].coord.y,pinnings[i].coord.x, pinnings[i].coord.y);
         particles[i].coord.x += pinnings[i].lx * pinnings[i].cosfi;
-        particles[i].coord.y += pinnings[i].ly * pinnings[i].sinfi;
+        particles[i].coord.y += pinnings[i].lx * pinnings[i].sinfi;
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
         particles[i].drx = 0.0;
@@ -251,7 +266,57 @@ void initSquareParticles() {
         particles[i].pinningSiteId = pinnings[i].id;
         pinnings[i].particlesId = particles[i].id;
     }
-};
+}
+
+void initSquareVertex() {
+    int k = 0; // hanyadik vertexnel tartunk
+    int pinningNX2 = 2* pinningNX;
+    int i0, i1,i2,i3;
+
+    for (int i = 0; i < pinningNX; i++)
+        for (int j = 0; j < pinningNY; j++) {
+
+            vertex[k].id = k;
+            vertex[k].coord.x = (i + 0.1) * pinningDistX;
+            vertex[k].coord.y = (j + 0.1) * pinningDistY;
+            vertex[k].chessColor = (i + j) % 2;
+            vertex[k].type = 0;
+            vertex[k].color =2;
+            vertex[k].clusterId = -1;
+           // printf("i %d, j %d vert %d\n",i,j,vertex[k].id);
+            //hozza tartozo reszecske es pinningSite indexenek meghatarozasa
+
+            if(j==0)
+                i0= (i+1)*pinningNX2-1;
+            else
+                i0=i*pinningNX2+j*2-1;
+            if(i==0)
+                i1=(pinningNX-1) * pinningNX2+ j*2;
+            else
+                i1= i * pinningNX2-pinningNX2+j*2;
+            i2=i*pinningNX2+j*2;
+            i3=i*pinningNX2+j*2+1;
+
+            for(int l=0;l<4;l++){
+                vertex[k].nearparticles[l]=0;
+            }
+            //hozza tartozo reszecskek
+            vertex[k].particles[0] = particles[i0].id;
+            vertex[k].particles[1] = particles[i1].id;
+            vertex[k].particles[2] = particles[i2].id;
+            vertex[k].particles[3] = particles[i3].id;
+
+
+            //hozza tartozo pinningSiteok
+            vertex[k].pinningsites[0] = pinnings[i0].id;
+            vertex[k].pinningsites[1] = pinnings[i1].id;
+            vertex[k].pinningsites[2] = pinnings[i2].id;
+            vertex[k].pinningsites[3] = pinnings[i3].id;
+
+            k++;
+
+        }
+}
 
 //pinning helyenek a megkeresese
 void stowPinning(Coordinate *right_coord, int i) {
@@ -324,6 +389,62 @@ void initPinningSites() {
 //           pinnings[N_pinning-1].coord.x,pinnings[N_pinning-1].coord.y,pinnings[N_pinning-1].lx,pinnings[N_pinning-1].lx);
 }
 
+void calculateVertexTypeGS(int i){
+
+    if(vertex[i].nearparticles[0]==1 && vertex[i].nearparticles[3]==1)
+        vertex[i].type=5+vertex[i].chessColor;
+    if(vertex[i].nearparticles[1]==1 && vertex[i].nearparticles[2]==1)
+        vertex[i].type=6-vertex[i].chessColor;
+}
+void calculateVertexTypes(){
+    double dx,dy,dr2;
+
+    for(int i=0;i<N_particles;i++)
+        particles[i].color=2;
+
+    for(int i=0;i<N_vertex;i++) {
+        vertex[i].type = 0;
+        for (int j = 0; j < 4; j++) {
+            vertex[i].nearparticles[j] = 0;
+            dx = vertex[i].coord.x - particles[vertex[i].particles[j]].coord.x;
+            dy = vertex[i].coord.y - particles[vertex[i].particles[j]].coord.y;
+            dx = dx * pinnings[vertex[i].pinningsites[j]].cosfi;
+            dy = dy * pinnings[vertex[i].pinningsites[j]].sinfi;
+            keepParticleInSystem(&dx, &dy);
+            dr2 = dx * dx + dy * dy;
+            if (dr2 < ((pinningDistX * pinningDistX) / 4.0)) {
+                vertex[i].type++;
+                vertex[i].nearparticles[j] = 1;
+                particles[vertex[i].particles[j]].color=3;
+            }
+        }
+
+
+        if (vertex[i].type == 2)
+            calculateVertexTypeGS(i);
+        vertex[i].color = vertex[i].type + 4;
+
+        if (vertex[i].type == 3)
+        {
+            printf("%d:",i);
+            for (int j = 0; j < 4; j++)
+                printf("%d",vertex[i].nearparticles[j]);
+            printf("\n");
+
+        }
+//        if (i == 318) {
+//            printf("%d %d %d %d\n", vertex[i].nearparticles[0], vertex[i].nearparticles[1], vertex[i].nearparticles[2],
+//                   vertex[i].nearparticles[3]);
+//            vertex[i].color=3;
+//        }
+    }
+
+
+//    for(int j=0;j<4;j++){
+//        particles[vertex[15].particles[j]].color=2;
+//    }
+}
+
 void calculateThermalForces() {
     double fx, fy;
     for (int i = 0; i < N_particles; i++) {
@@ -361,13 +482,13 @@ void calculatePinningForces() {
             fyp = -pinningK * dyp;
 //            printf("elso eset dxp<=-lx2\n");
         } else if (dxp > (-pinningLx2) && (dxp < pinningLx2)) {
-            fxp = (pinningLx2 - fabs(dxp))*pinningMiddleHeight;
-            if(dxp<0) fxp=-fxp;
+            fxp = (pinningLx2 - fabs(dxp)) * pinningMiddleHeight;
+            if (dxp < 0) fxp = -fxp;
 //            fxp=0.0;
             fyp = -pinningK * dyp;
 //            printf("masodik eset -lx2<dxp<lx2\n");
         } else if (dxp >= pinningLx2) {
-            fxp = -pinningK * (dxp-pinningLx2);
+            fxp = -pinningK * (dxp - pinningLx2);
             fyp = -pinningK * dyp;
 //            printf("harmadik eset dxp>=lx2\n");
         }
@@ -536,7 +657,7 @@ void moveParticles() {
         particles[i].fx = 0.0;
         particles[i].fy = 0.0;
     }
-  //  printf("%lf %lf\n", particles[0].coord.x, particles[0].coord.y);
+    //  printf("%lf %lf\n", particles[0].coord.x, particles[0].coord.y);
 }
 
 //this is for plot
@@ -545,14 +666,14 @@ void write_cmovie() {
     float floatholder;
     int intholder;
 
-    intholder = N_particles;
+    intholder = N_particles+N_vertex;
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     intholder = t;
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     for (i = 0; i < N_particles; i++) {
-        intholder = particles[i].color + 2;
+        intholder = particles[i].color;
         fwrite(&intholder, sizeof(int), 1, moviefile);
         intholder = particles[i].id;//ID
         fwrite(&intholder, sizeof(int), 1, moviefile);
@@ -562,6 +683,21 @@ void write_cmovie() {
         fwrite(&floatholder, sizeof(float), 1, moviefile);
         floatholder = 1.0;//cum_disp, cmovie format
         fwrite(&floatholder, sizeof(float), 1, moviefile);
+    }
+
+    for(i=0;i<N_vertex;i++){
+        intholder = vertex[i].color;
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        intholder = vertex[i].id;//ID
+        fwrite(&intholder, sizeof(int), 1, moviefile);
+        floatholder = (float) vertex[i].coord.x;
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = (float) vertex[i].coord.y;
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+        floatholder = 1.0;//cum_disp, cmovie format
+        fwrite(&floatholder, sizeof(float), 1, moviefile);
+
+
     }
 
 }
@@ -575,42 +711,42 @@ void write_contour_file() {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(f, "%d\n", N_pinning);
+    fprintf(f, "%d\n", N_pinning*3);
 
-    for (int i = 0; i < N_pinning; i++) {
+    for (int i = 0; i < N_pinning*3; i++) {
         fprintf(f, "%e\n", pinnings[i].coord.x);
         fprintf(f, "%e\n", pinnings[i].coord.y);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
-//        if (pinnings[i].sinfi == 0.0) {
-//            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
-//            fprintf(f, "%e\n", pinnings[i].coord.y);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//
-//            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
-//            fprintf(f, "%e\n", pinnings[i].coord.y);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//        } else {
-//            fprintf(f, "%e\n", pinnings[i].coord.x);
-//            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLy2);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//
-//            fprintf(f, "%e\n", pinnings[i].coord.x);
-//            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLy2);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//            fprintf(f, "%e\n", pinnings[i].r);
-//        }
+        if (pinnings[i].sinfi == 0.0) {
+            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].coord.y);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+
+            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].coord.y);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+        } else {
+            fprintf(f, "%e\n", pinnings[i].coord.x);
+            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+
+            fprintf(f, "%e\n", pinnings[i].coord.x);
+            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLx2);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+            fprintf(f, "%e\n", pinnings[i].r);
+        }
     }
     fclose(f);
-    printf("Contour file written with %d circles\n", N_pinning * 3);
+    printf("Contour file written with %d circles\n", N_pinning*3);
     fflush(stdout);
 
 }
@@ -679,8 +815,10 @@ int main(int argc, char *argv[]) {
 
     start();
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(20, 20, 2.0, 2.0, 1.0, 0.2, 0.2, 2.0, 0.05);
-    ///inicializalas Particle: N_particles, sX+sY, dt, r, rv
+    initPinning(20, 20, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+
+    ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
+    ///init Particle: N_particles, sX+sY, dt, r, rv, temperature
     init(N_pinning, 40.0, 0.002, 4.0, 6.0, 3.0);
 
     initPinningSites();
@@ -696,12 +834,19 @@ int main(int argc, char *argv[]) {
 //        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
 //    }
 
+    initSquareVertex();
+
+    for (int i = 0; i < N_vertex; i++) {
+        printf("id %d,szin %d, part0 %d part1 %d part2 %d part3 %d\n", vertex[i].id, vertex[i].color,vertex[i].particles[0],
+               vertex[i].particles[1], vertex[i].particles[2], vertex[i].particles[3]);
+    }
+
     buildVerletList();
 
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
-       // printf(stderr, "Failed to open file.\n");
+        // printf(stderr, "Failed to open file.\n");
         return 1;
     }
 
@@ -716,6 +861,10 @@ int main(int argc, char *argv[]) {
         if (flag_to_rebuild_verlet) buildVerletList();
 
         if (t % 100 == 0) {
+            calculateVertexTypes();
+//            for (int i = 0; i < N_vertex; i++) {
+//                printf("id %d,szin %d\n", vertex[i].id, vertex[i].color);
+//            }
             write_cmovie();
         }
         if (t % 500 == 0) {

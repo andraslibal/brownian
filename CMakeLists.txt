@@ -3,6 +3,6 @@ project(brownian C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(brownian main.c particle.h data.h pinning.h )
+add_executable(brownian main.c particle.h data.h pinning.h vertex.h)
 
 target_link_libraries(brownian m)

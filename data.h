@@ -4,6 +4,7 @@
 #include <string.h>
 #include <regex.h>
 #include "pinning.h"
+#include "vertex.h"
 
 ///Particles
 /*(N_particles, number of  particles and also the box size, proportionally! if  you
@@ -49,6 +50,10 @@ int N_tabulated;        //hany f/r-et szamitunk ki
 double *tabulated_f_per_r;//f/r ertekeinek eltarolasa
 double tabulate_start;    //hol kezdodik
 double tabulate_step;     //leptek
+
+///Vertex
+int N_vertex;          //vertexek szama
+Vertex *vertex;        //list of vertex
 
 ///time measuring, how much the simulation ran
 time_t time_begin;

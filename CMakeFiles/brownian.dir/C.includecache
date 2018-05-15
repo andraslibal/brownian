@@ -19,11 +19,17 @@ regex.h
 -
 pinning.h
 /home/rebeka/Documents/brownian/pinning.h
+vertex.h
+/home/rebeka/Documents/brownian/vertex.h
 
 /home/rebeka/Documents/brownian/main.c
 data.h
 /home/rebeka/Documents/brownian/data.h
 errno.h
+-
+stdint.h
+-
+math.h
 -
 
 /home/rebeka/Documents/brownian/particle.h
@@ -33,4 +39,6 @@ stdio.h
 /home/rebeka/Documents/brownian/pinning.h
 particle.h
 /home/rebeka/Documents/brownian/particle.h
+
+/home/rebeka/Documents/brownian/vertex.h
 
