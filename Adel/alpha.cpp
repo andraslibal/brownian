@@ -319,20 +319,28 @@ void putParticleInPinningSite()
             if (cos_fi[i] == 1.0) {
                 x[i] = x_pinning_site[i] - half_length_pinning_site;
                 y[i] = y_pinning_site[i];
-            } else
+            } else {
                 if (cos_fi[i] == 0.0) {
                     x[i] = x_pinning_site[i];
                     y[i] = y_pinning_site[i] - half_length_pinning_site;
+                } else {
+                    x[i] = x_pinning_site[i] - cos_fi[i] * half_length_pinning_site;
+                    y[i] = y_pinning_site[i] - sin_fi[i] * half_length_pinning_site;
                 }
+            }
         } else {
             if (cos_fi[i] == 1.0) {
                 x[i] = x_pinning_site[i] + half_length_pinning_site;
                 y[i] = y_pinning_site[i];
-            } else
+            } else {
                 if (cos_fi[i] == 0.0) {
                     x[i] = x_pinning_site[i];
                     y[i] = y_pinning_site[i] + half_length_pinning_site;
+                } else {
+                    x[i] = x_pinning_site[i] + cos_fi[i] * half_length_pinning_site;
+                    y[i] = y_pinning_site[i] + sin_fi[i] * half_length_pinning_site;
                 }
+            }
         }
 
         color[i] = 1;
@@ -361,13 +369,66 @@ void initSquarVerteces()
         {
             x_vertex[k] = x;
             y_vertex[k] = y;
+            vertex_type[k] = 0;
             vertex_color[k++] = 4;
 
             x += pinning_lattice_ax;
         }
         y += pinning_lattice_ay;
     }
+    
+    printf("Init square verteces complet\n");
+    fflush(stdout);
+}
 
+void initHexaVerteces()
+{
+    int i, j, k;
+    double x, y, sqrt3;
+
+    sqrt3 = sqrt(3);
+    x = 0.0;
+    y = pin_length * sqrt3 / 2;
+    k = 0;
+
+    for (i = 0; i < pinning_lattice_Nx; i++)
+	{
+        x = 0.0;
+        for (j = 0; j < pinning_lattice_Ny; j++)
+        {
+            x_vertex[k] = x;
+            y_vertex[k] = y;
+            vertex_type[k] = 0;
+            vertex_color[k++] = 4;
+
+            x += pinning_lattice_ax;
+            x_vertex[k] = x;
+            y_vertex[k] = y;
+            vertex_type[k] = 0;
+            vertex_color[k++] = 4;
+
+            x += pinning_lattice_ax / 2;
+            y -= pinning_lattice_ay * sqrt3 / 2;
+
+            x_vertex[k] = x;
+            y_vertex[k] = y;
+            vertex_type[k] = 0;
+            vertex_color[k++] = 4;
+
+            x += pinning_lattice_ax;
+            x_vertex[k] = x;
+            y_vertex[k] = y;
+            vertex_type[k] = 0;
+            vertex_color[k++] = 4;
+
+            x += pinning_lattice_ax / 2;
+            y += pinning_lattice_ay * sqrt3 / 2;
+        }
+        y += pinning_lattice_ay * sqrt3;
+    }
+    
+    printf("Init hexa verteces complet\n");
+    fflush(stdout);
 }
 
 void initPinningSites()
@@ -423,10 +484,9 @@ void initSquarePinningSites()
 
 	for (i = 0; i < pinning_lattice_Nx; i++)
 	{
-        x = 0.0;
+        x = pinning_lattice_ax / 2;
         for (j = 0; j < pinning_lattice_Ny; j++)
         {
-            x += pinning_lattice_ax / 2;
             x_pinning_site[k] = x;
             y_pinning_site[k] = y;
 
@@ -454,14 +514,12 @@ void initHexaPinningSites()
     double x, y, sqrt3;
     int i, j, k;
 
-    sqrt3 = sqrt(3);
+    initArraysForPinningSites(6);
 
+    sqrt3 = sqrt(3);
     x = 0.0;
     y = pin_length * sqrt3 / 2;
-
     k = 0;
-
-    initArraysForPinningSites(6);
 
 	for (i = 0; i < pinning_lattice_Nx; i++)
 	{
@@ -940,8 +998,8 @@ int main(int argc, char* argv[])
 
     f = fopen(moviefile, "wb");
 
-    initSquarePinningSites();
-    initSquarVerteces();
+    initHexaPinningSites();
+    initHexaVerteces();
     initParticles();
     writeGfile();
     cout << "Sx = " << Sx << endl;
