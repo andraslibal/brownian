@@ -1,6 +1,7 @@
 #include "data.h"
 #include <errno.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <math.h>
 
 uint64_t u, v, w;
@@ -206,6 +207,15 @@ void initPinning(int nrX, int nrY, double distX, double distY, double lx2, doubl
            pinningNY, pinningDistX, pinningDistY);
 }
 
+uint64_t generateMortonId(uint32_t x,uint32_t y){
+    uint64_t mort=0;
+    for (int i = 0; i < sizeof(x) * 8; i++)
+    {
+        mort |= (x & (uint64_t)1 << i) << i | (y & (uint64_t)1 << i) << (i + 1);
+    }
+    return mort;
+}
+
 //ha kilepett a dobozbol, visszarakjuk
 void keepParticleInSystem(double *dx, double *dy) {
     if (*dx > sX2) *dx -= sX;
@@ -274,6 +284,7 @@ void initSquareParticles() {
         particles[i].fy = 0.0;
         particles[i].drx = 0.0;
         particles[i].dry = 0.0;
+        particles[i].mortonId = (int)generateMortonId((uint32_t)particles[i].coord.x,(uint32_t)particles[i].coord.y);
         particles[i].pinningSiteId = pinnings[i].id;
         pinnings[i].particlesId = particles[i].id;
     }
@@ -312,10 +323,10 @@ void initSquareVertex() {
                 vertex[k].nearparticles[l] = 0;
             }
             //hozza tartozo reszecskek
-            vertex[k].particles[0] = particles[i0].id;
-            vertex[k].particles[1] = particles[i1].id;
-            vertex[k].particles[2] = particles[i2].id;
-            vertex[k].particles[3] = particles[i3].id;
+            vertex[k].particles[0] = pinnings[i0].particlesId;
+            vertex[k].particles[1] = pinnings[i1].particlesId;
+            vertex[k].particles[2] = pinnings[i2].particlesId;
+            vertex[k].particles[3] = pinnings[i3].particlesId;
 
 
             //hozza tartozo pinningSiteok
@@ -828,7 +839,7 @@ void write_cmovie() {
 
 void write_gfile() {
     FILE *f;
-    f = fopen("gfile", "wt");
+    f = fopen("gfile20", "wt");
     if (f == NULL) {
         printf("Gfile not created= %d\n", errno);
         exit(EXIT_FAILURE);
@@ -946,6 +957,24 @@ void end() {
             timeDiff, timeDiff / 60);
 }
 
+void sortParticles(){
+    Particle part;
+
+    for (int i=0;i<N_particles-1;i++){
+        for(int j=i;j<N_particles;j++){
+            if(particles[i].mortonId>particles[j].mortonId) {
+                part = particles[j];
+                particles[j] = particles[i];
+                particles[i] = part;
+            }
+        }
+    }
+
+//    for (int i = 0; i < N_particles; i++) {
+//        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].mortonId,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
+//    }
+}
+
 //return 1 if ok,
 int properFilename(char *filename) {
     regex_t regexCompiled;
@@ -971,7 +1000,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(26, 26, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(20, 20, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -990,10 +1019,25 @@ void allInit() {
     // initParticles();
     initSquareParticles();
 //    for (int i = 0; i < N_particles; i++) {
-//        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].color,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
+//        printf("id %d,%d, %.2f %.2f pinningID %d\n", particles[i].id, particles[i].mortonId,particles[i].coord.x, particles[i].coord.y,particles[i].pinningSiteId);
 //    }
 
-    initSquareVertex();
+   // sortParticles();
+//    for(int i=0;i<N_pinning;i++){
+//        printf("pinningId %d partID %d\n",pinnings[i].id,particles[i].id);
+//        pinnings[i].particlesId=particles[i].id;
+//        particles[i].pinningSiteId = pinnings[i].id;
+//   }
+//    for (int i = 0; i < N_pinning; i++) {
+//        printf("id %d, c: %.2f %.2f,r %.2f, f %.2f, id: %d, m:%.2f cos:%.2f, sin:%.2f,lx: %.2f ly: %.2f\n", pinnings[i].id, pinnings[i].coord.x,
+//               pinnings[i].coord.y, pinnings[i].r,pinnings[i].fMax,pinnings[i].particlesId, pinnings[i].middleHeight, pinnings[i].cosfi, pinnings[i].sinfi, pinnings[i].lx,pinnings[i].ly);
+//    }
+//
+//    for (int i = 0; i < N_particles; i++) {
+//        printf("i %d id %d,%d, %.2f %.2f color %d pinningID %d\n",i, particles[i].id, particles[i].mortonId,particles[i].coord.x, particles[i].coord.y,particles[i].color,particles[i].pinningSiteId);
+//    }
+
+        initSquareVertex();
 
 //    for (int i = 0; i < N_vertex; i++) {
 //        printf("id %d,szin %d, part0 %d part1 %d part2 %d part3 %d\n", vertex[i].id, vertex[i].color,vertex[i].particles[0],
@@ -1046,10 +1090,9 @@ int main(int argc, char *argv[]) {
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
-        printf(stderr, "Failed to open file.\n");
+        perror("Failed to open file.\n");
         return 1;
     }
-
 
     buildVerletList();
 
@@ -1064,5 +1107,6 @@ int main(int argc, char *argv[]) {
     printf("The result(for plot) can be found in file: %s\n", filename);
     free(particles);
     free(pinnings);
+
     return 0;
 }

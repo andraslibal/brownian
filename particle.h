@@ -14,7 +14,8 @@ struct Particle {
     double q;       //toltes
     double drx;
     double dry;
-    int pinningSiteId; //melyik pinning sitehoz tartozik
+    int pinningSiteId; //melyik pinning sitehoz
+    int mortonId;       //morton kodok
 };
 
 typedef struct Particle Particle;
