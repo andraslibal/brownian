@@ -1,5 +1,5 @@
-set xrange -5 50
-set yrange -5 50
+set xrange -2 42
+set yrange -2 42
 loadcolormap colors.txt
 loadcontour contour.txt
 cmovie

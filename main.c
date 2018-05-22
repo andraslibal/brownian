@@ -389,6 +389,8 @@ void initPinningSites() {
 //           pinnings[N_pinning-1].coord.x,pinnings[N_pinning-1].coord.y,pinnings[N_pinning-1].lx,pinnings[N_pinning-1].lx);
 }
 
+
+//meghatarozza, hogy a ket GS kozul melyikhez tartozik
 void calculateVertexTypeGS(int i){
 
     if(vertex[i].nearparticles[0]==1 && vertex[i].nearparticles[3]==1)
@@ -396,11 +398,13 @@ void calculateVertexTypeGS(int i){
     if(vertex[i].nearparticles[1]==1 && vertex[i].nearparticles[2]==1)
         vertex[i].type=6-vertex[i].chessColor;
 }
+
+//vertex tipusok
 void calculateVertexTypes(){
     double dx,dy,dr2;
 
-    for(int i=0;i<N_particles;i++)
-        particles[i].color=2;
+//    for(int i=0;i<N_particles;i++)
+//        particles[i].color=2;
 
     for(int i=0;i<N_vertex;i++) {
         vertex[i].type = 0;
@@ -423,15 +427,15 @@ void calculateVertexTypes(){
         if (vertex[i].type == 2)
             calculateVertexTypeGS(i);
         vertex[i].color = vertex[i].type + 4;
-
-        if (vertex[i].type == 3)
-        {
-            printf("%d:",i);
-            for (int j = 0; j < 4; j++)
-                printf("%d",vertex[i].nearparticles[j]);
-            printf("\n");
-
-        }
+//
+//        if (vertex[i].type == 3)
+//        {
+//            printf("%d:",i);
+//            for (int j = 0; j < 4; j++)
+//                printf("%d",vertex[i].nearparticles[j]);
+//            printf("\n");
+//
+//        }
 //        if (i == 318) {
 //            printf("%d %d %d %d\n", vertex[i].nearparticles[0], vertex[i].nearparticles[1], vertex[i].nearparticles[2],
 //                   vertex[i].nearparticles[3]);
@@ -696,10 +700,26 @@ void write_cmovie() {
         fwrite(&floatholder, sizeof(float), 1, moviefile);
         floatholder = 1.0;//cum_disp, cmovie format
         fwrite(&floatholder, sizeof(float), 1, moviefile);
-
-
     }
 
+}
+
+void write_gfile(){
+    FILE *f;
+    f = fopen("gfile","wt");
+    if(f==NULL){
+        printf("Gfile not created= %d\n", errno);
+        exit(EXIT_FAILURE);
+    }
+
+    fprintf(f,"set xrange %d %d\n", -2, (int)sX+2);
+    fprintf(f,"set yrange %d %d\n", -2, (int)sY+2);
+    fprintf(f,"loadcolormap colors.txt\n");
+    fprintf(f,"loadcontour contour.txt\n");
+    fprintf(f,"cmovie\n");
+    fclose(f);
+    printf("Gfile created\n");
+    fflush(stdout);
 }
 
 void write_contour_file() {
@@ -798,7 +818,6 @@ int properFilename(char *filename) {
     result = !regexec(&regexCompiled, filename, maxMatches, pmatch, 0) ? (!(pmatch[maxGroups - 1].rm_so) &&
                                                                           (pmatch[maxGroups - 1].rm_eo ==
                                                                            strlen(filename))) : 0;
-
     regfree(&regexCompiled);
     return result;
 }
@@ -828,6 +847,7 @@ int main(int argc, char *argv[]) {
 //    }
 
     write_contour_file();
+    write_gfile();
     // initParticles();
     initSquareParticles();
 //    for (int i = 0; i < N_particles; i++) {
@@ -836,17 +856,17 @@ int main(int argc, char *argv[]) {
 
     initSquareVertex();
 
-    for (int i = 0; i < N_vertex; i++) {
-        printf("id %d,szin %d, part0 %d part1 %d part2 %d part3 %d\n", vertex[i].id, vertex[i].color,vertex[i].particles[0],
-               vertex[i].particles[1], vertex[i].particles[2], vertex[i].particles[3]);
-    }
+//    for (int i = 0; i < N_vertex; i++) {
+//        printf("id %d,szin %d, part0 %d part1 %d part2 %d part3 %d\n", vertex[i].id, vertex[i].color,vertex[i].particles[0],
+//               vertex[i].particles[1], vertex[i].particles[2], vertex[i].particles[3]);
+//    }
 
     buildVerletList();
 
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
-        // printf(stderr, "Failed to open file.\n");
+         printf(stderr, "Failed to open file.\n");
         return 1;
     }
 
