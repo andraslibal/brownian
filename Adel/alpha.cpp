@@ -176,7 +176,7 @@ void initParticles()
 
 	dt = 0.01;
 	current_time = 0;
-	total_time = 300000;
+	total_time = 100000;
     multiplier = 0;
     time_echo = 500;
 
@@ -192,12 +192,12 @@ void initArraysForPinningSites(int multiplier)
 
 	r_pinning_site = 0.2;
 	half_length_pinning_site = 0.6;
-	K_max_pinning_site = 5.0;
-	K_middle_pinning_site = 0.1;
+	K_max_pinning_site = 2.0;
+	K_middle_pinning_site = 0.15;
 	T = 3.0;
 
-	pinning_lattice_Nx = 10;
-	pinning_lattice_Ny = 10;
+	pinning_lattice_Nx = 30;
+	pinning_lattice_Ny = 30;
 	pinning_lattice_ax = 2.0;
 	pinning_lattice_ay = 2.0;
 
@@ -671,7 +671,7 @@ void initHexaPinningSites()
 	}
 }
 
-void calculateGroudState(int i)
+void calculateGroundState(int i)
 {
     int right_pinning_site,
         left_pinning_site,
@@ -720,7 +720,7 @@ void calculateVertexType()
 		    y_rotated = -diffX * sin_fi[particle_id] + diffY * cos_fi[particle_id];
 
 			// it won't work well if pinning_lattice_az is different from pinning_lattice_ay
-            // if the particle is closet than the half of the pinning length, then:
+            // if the particle is closer than the half of the pinning length, then:
 			if (x_rotated * x_rotated + y_rotated * y_rotated <= pinning_lattice_ax * pinning_lattice_ax / 4.0)
             {
 				vertex_type[i] ++;
@@ -729,7 +729,7 @@ void calculateVertexType()
                 particle_is_near_to_vertex[particle_id] = 0;
             }
 		}
-        if (vertex_type[i] == 2) calculateGroudState(i);
+        if (vertex_type[i] == 2) calculateGroundState(i);
 		vertex_color[i] = 2 + vertex_type[i];
 	}
 }
@@ -743,7 +743,7 @@ void calculateTabulatedForces()
 	r2 = r * r;
 
 	tab_measure = (r_verlet * r_verlet - r2) / (N_tabulate - 1.0);
-	tab_start = r;
+	tab_start = r2;
 
 	for (i = 0; i < N_tabulate; i++) {
 		tabulated_force[i] = exp(- r / r0) / r2 / r;
@@ -828,7 +828,6 @@ void calculatePairwiseForces()
 
 	for (it = 0; it < verlet.size(); it++)
 	{
-
 		i = verlet.at(it).at(0);
 		j = verlet.at(it).at(1);
 		
@@ -841,10 +840,10 @@ void calculatePairwiseForces()
 		if (diffY > Sy_2) diffY -= Sy;
 
 		distance = diffX * diffX + diffY * diffY;
-		if (distance < 0.1) tab_index = 0;
+		if (distance < tab_start) tab_index = 0;
 		else tab_index = (int) floor((distance - tab_start) / tab_measure);
   
-		if (tab_index >= 50000) f = 0.0;
+		if (tab_index >= N_tabulate) f = 0.0;
 		else f = tabulated_force[tab_index] * multiplier;
 
 		fx[i] += f * diffX;
@@ -906,6 +905,7 @@ void calculateModifiedPinningiteForces()
 	double x_rotated, y_rotated;
 	double fx_rotated, fy_rotated;
 	double f;
+
 	for (i = 0; i < N_pinning_sites; i++)
 	{
 		j = particle_ID[i];
@@ -918,28 +918,29 @@ void calculateModifiedPinningiteForces()
 		if (diffY < -Sy_2) diffY += Sy;
 		if (diffY > Sy_2) diffY -= Sy;
 
-		x_rotated = diffX * cos_fi[i] + diffY * sin_fi[i];
-		y_rotated = -diffX * sin_fi[i] + diffY * cos_fi[i];
+		x_rotated = diffX * cos_fi[i] - diffY * sin_fi[i];
+		y_rotated = diffX * sin_fi[i] + diffY * cos_fi[i];
 
-		if (x_rotated > half_length_pinning_site) 
+		if (x_rotated >= half_length_pinning_site) 
 		{
 			x_rotated = x_rotated - half_length_pinning_site;
 			fx_rotated = -K_max_pinning_site * x_rotated;
 			fy_rotated = -K_max_pinning_site * y_rotated;
 
 		} else
-		if (x_rotated < -half_length_pinning_site) 
+		if (x_rotated <= -half_length_pinning_site) 
 		{
 			x_rotated = x_rotated + half_length_pinning_site;
 			fx_rotated = -K_max_pinning_site * x_rotated;
 			fy_rotated = -K_max_pinning_site * y_rotated;
 		} else {
-			fx_rotated = K_middle_pinning_site * x_rotated;
+			fx_rotated = K_middle_pinning_site * (half_length_pinning_site - fabs(x_rotated));
+            if (x_rotated < 0) fx_rotated *= -1;
 			fy_rotated = -K_max_pinning_site * y_rotated;
 		}
 
-		fx[j] += fx_rotated * cos_fi[i] - fy_rotated * sin_fi[i];
-		fy[j] += fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
+		fx[j] += fx_rotated * cos_fi[i] + fy_rotated * sin_fi[i];
+		fy[j] += -fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
 		
 		// circle shaped
 		//fx[j] += -K_max_pinning_site * diffX;
@@ -948,15 +949,12 @@ void calculateModifiedPinningiteForces()
 }
 
 void moveParticles()
-{
+{   
 	int i;
 	double deltax, deltay;
-	double maxfx = 0.0, maxfy = 0.0;
 
 	for (i = 0; i < N; i++) 
 	{
-		maxfx = maxfx < fx[i] ? fx[i] : maxfx;
-		maxfy = maxfy < fy[i] ? fy[i] : maxfy;
 
 		deltax = fx[i] * dt;
 		deltay = fy[i] * dt;
@@ -980,7 +978,6 @@ void moveParticles()
 		fx[i] = 0.0;
 		fy[i] = 0.0;
 	}
-	// cout << maxfx << " " << maxfy << endl;
 }
 
 void writeToFile(char* filename)
@@ -1017,7 +1014,7 @@ void writeContourFile()
 
     // for(j = 0; j < vertex_neighbor_number; j++)
 	// {
-    //     i = vertex_neighbor_id[49][j];
+    //     i = vertex_neighbor_id[8][j];
 	// 	f << x_pinning_site[i] << endl;
 	// 	f << y_pinning_site[i] << endl;
 	// 	f << r_pinning_site << endl;
@@ -1258,7 +1255,7 @@ int main(int argc, char* argv[])
         {
             calculateVertexType();
 			writeCmovie(f, current_time);
-            multiplier = current_time / total_time;
+            multiplier = (double) current_time / (double) total_time;
             writeStatistics();
         }
 	}
