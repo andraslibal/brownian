@@ -55,6 +55,10 @@ double tabulate_step;     //leptek
 int N_vertex;          //vertexek szama
 Vertex *vertex;        //list of vertex
 
+///Clusters
+int N_clusters;         //clusterek szama
+int *clusters;          //adott cluster-be hany reszecske tartozik
+
 ///time measuring, how much the simulation ran
 time_t time_begin;
 time_t time_end;

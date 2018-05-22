@@ -165,6 +165,14 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
         exit(EXIT_FAILURE);
     }
 
+    ///Cluster
+    N_clusters = 0;
+    clusters = (int *) malloc(N_clusters * sizeof(int));
+    if (clusters == NULL) {
+        perror("Allocation problem with Cluster list, exiting");
+        exit(EXIT_FAILURE);
+    }
+
     printf("General Init done!\n N_particles=%d N_pinning=%d, N_vertex=%d, sX=%.2f sY=%.2f\n", N_particles, N_pinning,
            N_vertex, sX, sY);
 
@@ -270,8 +278,8 @@ void initSquareParticles() {
 
 void initSquareVertex() {
     int k = 0; // hanyadik vertexnel tartunk
-    int pinningNX2 = 2* pinningNX;
-    int i0, i1,i2,i3;
+    int pinningNX2 = 2 * pinningNX;
+    int i0, i1, i2, i3;
 
     for (int i = 0; i < pinningNX; i++)
         for (int j = 0; j < pinningNY; j++) {
@@ -281,24 +289,24 @@ void initSquareVertex() {
             vertex[k].coord.y = (j + 0.1) * pinningDistY;
             vertex[k].chessColor = (i + j) % 2;
             vertex[k].type = 0;
-            vertex[k].color =2;
+            vertex[k].color = 2;
             vertex[k].clusterId = -1;
-           // printf("i %d, j %d vert %d\n",i,j,vertex[k].id);
+            // printf("i %d, j %d vert %d\n",i,j,vertex[k].id);
             //hozza tartozo reszecske es pinningSite indexenek meghatarozasa
 
-            if(j==0)
-                i0= (i+1)*pinningNX2-1;
+            if (j == 0)
+                i0 = (i + 1) * pinningNX2 - 1;
             else
-                i0=i*pinningNX2+j*2-1;
-            if(i==0)
-                i1=(pinningNX-1) * pinningNX2+ j*2;
+                i0 = i * pinningNX2 + j * 2 - 1;
+            if (i == 0)
+                i1 = (pinningNX - 1) * pinningNX2 + j * 2;
             else
-                i1= i * pinningNX2-pinningNX2+j*2;
-            i2=i*pinningNX2+j*2;
-            i3=i*pinningNX2+j*2+1;
+                i1 = i * pinningNX2 - pinningNX2 + j * 2;
+            i2 = i * pinningNX2 + j * 2;
+            i3 = i * pinningNX2 + j * 2 + 1;
 
-            for(int l=0;l<4;l++){
-                vertex[k].nearparticles[l]=0;
+            for (int l = 0; l < 4; l++) {
+                vertex[k].nearparticles[l] = 0;
             }
             //hozza tartozo reszecskek
             vertex[k].particles[0] = particles[i0].id;
@@ -391,22 +399,22 @@ void initPinningSites() {
 
 
 //meghatarozza, hogy a ket GS kozul melyikhez tartozik
-void calculateVertexTypeGS(int i){
+void calculateVertexTypeGS(int i) {
 
-    if(vertex[i].nearparticles[0]==1 && vertex[i].nearparticles[3]==1)
-        vertex[i].type=5+vertex[i].chessColor;
-    if(vertex[i].nearparticles[1]==1 && vertex[i].nearparticles[2]==1)
-        vertex[i].type=6-vertex[i].chessColor;
+    if (vertex[i].nearparticles[0] == 1 && vertex[i].nearparticles[3] == 1)
+        vertex[i].type = 5 + vertex[i].chessColor;
+    if (vertex[i].nearparticles[1] == 1 && vertex[i].nearparticles[2] == 1)
+        vertex[i].type = 6 - vertex[i].chessColor;
 }
 
 //vertex tipusok
-void calculateVertexTypes(){
-    double dx,dy,dr2;
+void calculateVertexTypes() {
+    double dx, dy, dr2;
 
 //    for(int i=0;i<N_particles;i++)
 //        particles[i].color=2;
 
-    for(int i=0;i<N_vertex;i++) {
+    for (int i = 0; i < N_vertex; i++) {
         vertex[i].type = 0;
         for (int j = 0; j < 4; j++) {
             vertex[i].nearparticles[j] = 0;
@@ -419,7 +427,7 @@ void calculateVertexTypes(){
             if (dr2 < ((pinningDistX * pinningDistX) / 4.0)) {
                 vertex[i].type++;
                 vertex[i].nearparticles[j] = 1;
-                particles[vertex[i].particles[j]].color=3;
+                particles[vertex[i].particles[j]].color = 3;
             }
         }
 
@@ -593,6 +601,116 @@ void calculatePairwiseForcesWithVerlet() {
     }
 }
 
+void calculateClusters() {
+    for (int i = 0; i < N_vertex; i++) {
+        vertex[i].clusterId = -1; //meg nem tartozik egyik clusterhez sem
+    }
+
+    int currentVertex = 0;
+    int nrVertex = 0; //adott clusterhez tartoz reszecskek szama
+    int currentType = 0;
+    int nrGoodToCheck = 0; //hany vertexszomszedot jo meg leellenorizni
+    int iInside = 0;
+    int neighborToCheck = 0;
+    int *indicesToCheck;
+    indicesToCheck = (int *) malloc(N_vertex * sizeof(int));
+    if (indicesToCheck == NULL) {
+        perror("Allocation problem with indicesToCheck list, exiting");
+        exit(EXIT_FAILURE);
+    }
+    int currentCluster =0;
+
+    while (currentVertex < N_vertex) {
+        nrVertex = 0;
+        nrGoodToCheck = 0;
+        if ((vertex[currentVertex].clusterId == -1) &&
+            (vertex[currentVertex].type == 5 || vertex[currentVertex].type == 6)) {
+            N_clusters++;
+            if (N_clusters != currentCluster) {
+                currentCluster = N_clusters;
+            }
+            nrVertex++;
+            vertex[currentVertex].clusterId = N_clusters - 1; //az illeto reszecskenek beallitjuk a clusterIDjat
+            currentType = vertex[currentVertex].type;
+            indicesToCheck[nrGoodToCheck] = currentVertex;
+            nrGoodToCheck++;
+            iInside = 0;
+
+            while (iInside < nrGoodToCheck) {
+                ///neighbor up
+                //ha a legfelso vertexrol van szo, meg kell nezni a doboz masik felen levot
+                if (indicesToCheck[iInside] % pinningNY == (pinningNY - 1))
+                    neighborToCheck = indicesToCheck[iInside] - (pinningNY - 1);
+                else neighborToCheck = indicesToCheck[iInside] + 1;
+
+                //ellenorizzuk, hogy az a szomszed ahhoz a clusterhez tartozik-e
+                if (vertex[neighborToCheck].type == currentType && vertex[neighborToCheck].clusterId == -1) {
+                    nrVertex++;
+                    vertex[neighborToCheck].clusterId = N_clusters - 1;
+                    indicesToCheck[nrGoodToCheck] = neighborToCheck;
+                    nrGoodToCheck++;
+                }
+
+                ///neighbor to the right
+                if ((indicesToCheck[iInside] / pinningNX) == (pinningNX - 1))
+                    neighborToCheck = indicesToCheck[iInside] - (pinningNX - 1) * pinningNY;
+                else neighborToCheck = indicesToCheck[iInside] + pinningNY;
+
+                if (vertex[neighborToCheck].type == currentType && vertex[neighborToCheck].clusterId == -1) {
+                    nrVertex++;
+                    vertex[neighborToCheck].clusterId = N_clusters - 1;
+                    indicesToCheck[nrGoodToCheck] = neighborToCheck;
+                    nrGoodToCheck++;
+                }
+
+                ///neighbor to the left
+                if ((indicesToCheck[iInside]) / pinningNX == 0)
+                    neighborToCheck = indicesToCheck[iInside] + (pinningNX - 1) * pinningNY;
+                else neighborToCheck = indicesToCheck[iInside] - pinningNY;
+
+                if (vertex[neighborToCheck].type == currentType && vertex[neighborToCheck].clusterId == -1) {
+                    nrVertex++;
+                    vertex[neighborToCheck].clusterId = N_clusters - 1;
+                    indicesToCheck[nrGoodToCheck] = neighborToCheck;
+                    nrGoodToCheck++;
+                }
+
+                ///neighbor down
+                if (indicesToCheck[iInside] % pinningNY == 0)
+                    neighborToCheck = indicesToCheck[iInside] + (pinningNY - 1);
+                else neighborToCheck = indicesToCheck[iInside] - 1;
+
+                if (vertex[neighborToCheck].type == currentType && vertex[neighborToCheck].clusterId == -1) {
+                    nrVertex++;
+                    vertex[neighborToCheck].clusterId = N_clusters - 1;
+                    indicesToCheck[nrGoodToCheck] = neighborToCheck;
+                    nrGoodToCheck++;
+                }
+
+                iInside++;
+
+            }
+
+        }
+
+        if(N_clusters >= currentCluster && nrVertex>0) {
+            clusters = (int *) realloc(clusters, N_clusters * sizeof(int));
+            if (clusters == NULL) {
+                perror("Allocation problem with Cluster list, exiting");
+                exit(EXIT_FAILURE);
+            }
+            clusters[N_clusters - 1] = nrVertex;
+        }
+        currentVertex++;
+    }
+
+    free(indicesToCheck);
+
+    printf("Number of clusters = %d\n", N_clusters);
+    for (int i = 0; i < N_clusters; i++)
+        printf("%d cluster with %d vertex\n", i, clusters[i]);
+}
+
 void buildVerletList() {
 //    printf("Build verlet %d idopillanatban\n", t);
 //    fflush(stdout);
@@ -670,7 +788,7 @@ void write_cmovie() {
     float floatholder;
     int intholder;
 
-    intholder = N_particles+N_vertex;
+    intholder = N_particles + N_vertex;
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     intholder = t;
@@ -689,7 +807,7 @@ void write_cmovie() {
         fwrite(&floatholder, sizeof(float), 1, moviefile);
     }
 
-    for(i=0;i<N_vertex;i++){
+    for (i = 0; i < N_vertex; i++) {
         intholder = vertex[i].color;
         fwrite(&intholder, sizeof(int), 1, moviefile);
         intholder = vertex[i].id;//ID
@@ -704,19 +822,19 @@ void write_cmovie() {
 
 }
 
-void write_gfile(){
+void write_gfile() {
     FILE *f;
-    f = fopen("gfile","wt");
-    if(f==NULL){
+    f = fopen("gfile", "wt");
+    if (f == NULL) {
         printf("Gfile not created= %d\n", errno);
         exit(EXIT_FAILURE);
     }
 
-    fprintf(f,"set xrange %d %d\n", -2, (int)sX+2);
-    fprintf(f,"set yrange %d %d\n", -2, (int)sY+2);
-    fprintf(f,"loadcolormap colors.txt\n");
-    fprintf(f,"loadcontour contour.txt\n");
-    fprintf(f,"cmovie\n");
+    fprintf(f, "set xrange %d %d\n", -1, (int) sX + 1);
+    fprintf(f, "set yrange %d %d\n", -1, (int) sY + 1);
+    fprintf(f, "loadcolormap colors.txt\n");
+    fprintf(f, "loadcontour contour.txt\n");
+    fprintf(f, "cmovie\n");
     fclose(f);
     printf("Gfile created\n");
     fflush(stdout);
@@ -731,9 +849,9 @@ void write_contour_file() {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(f, "%d\n", N_pinning*3);
+    fprintf(f, "%d\n", N_pinning * 3);
 
-    for (int i = 0; i < N_pinning*3; i++) {
+    for (int i = 0; i < N_pinning * 3; i++) {
         fprintf(f, "%e\n", pinnings[i].coord.x);
         fprintf(f, "%e\n", pinnings[i].coord.y);
         fprintf(f, "%e\n", pinnings[i].r);
@@ -766,7 +884,7 @@ void write_contour_file() {
         }
     }
     fclose(f);
-    printf("Contour file written with %d circles\n", N_pinning*3);
+    printf("Contour file written with %d circles\n", N_pinning * 3);
     fflush(stdout);
 
 }
@@ -866,7 +984,7 @@ int main(int argc, char *argv[]) {
     moviefile = fopen(filename, "wb");
     statistics_file = fopen("statistics.txt", "wt");
     if (!moviefile || !statistics_file) {
-         printf(stderr, "Failed to open file.\n");
+        printf(stderr, "Failed to open file.\n");
         return 1;
     }
 
@@ -892,6 +1010,8 @@ int main(int argc, char *argv[]) {
             fflush(stdout);
         }
     }
+
+    calculateClusters();
 
     fclose(moviefile);
     end();
