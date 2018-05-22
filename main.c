@@ -97,8 +97,9 @@ void tabulateForces() {
 //    printf("%5d %.2f %.2f %.2f %.8f\n", N_tabulated - 1, x, x2, f, tabulated_f_per_r[N_tabulated - 1]);
 }
 
-//alapbeallitasok, Particle,system,verlet,tabulated force, temperature, Vertexszam
-void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff, double temp) {
+//alapbeallitasok, Particle,system,verlet,tabulated force, temperature,multiply, Vertexszam
+void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff, double temp,
+          double mult, double maxmult) {
     N_particles = nrParticles;
     particles = NULL;
     particles = (Particle *) realloc(particles, N_particles * sizeof(Particle));
@@ -129,7 +130,9 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
 
     //mozgatas-homerseklet
     temperature = temp;
-    printf("T=%.2lf\n", temperature);
+    multiply = mult;
+    maxMultiply = maxmult;
+    printf("Temperature=%.2lf multiply=%.2lf\n", temperature, multiply);
 
     //Verlet list
     ////N_verlet= (pi*rv^2*N^2)/(2*sX*sY)
@@ -588,8 +591,8 @@ void calculatePairwiseForcesWithVerlet() {
             fx = 0.0;
             fy = 0.0;
         } else {
-            fx = tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
-            fy = tabulated_f_per_r[tabulatedForceIndex] * dy;
+            fx = multiply * tabulated_f_per_r[tabulatedForceIndex] * dx; ///f*(dx/dr)
+            fy = multiply * tabulated_f_per_r[tabulatedForceIndex] * dy;
         }
 
         particles[i].fx += fx;
@@ -618,7 +621,7 @@ void calculateClusters() {
         perror("Allocation problem with indicesToCheck list, exiting");
         exit(EXIT_FAILURE);
     }
-    int currentCluster =0;
+    int currentCluster = 0;
 
     while (currentVertex < N_vertex) {
         nrVertex = 0;
@@ -693,7 +696,7 @@ void calculateClusters() {
 
         }
 
-        if(N_clusters >= currentCluster && nrVertex>0) {
+        if (N_clusters >= currentCluster && nrVertex > 0) {
             clusters = (int *) realloc(clusters, N_clusters * sizeof(int));
             if (clusters == NULL) {
                 perror("Allocation problem with Cluster list, exiting");
@@ -705,6 +708,11 @@ void calculateClusters() {
     }
 
     free(indicesToCheck);
+}
+
+void calculateMultiply(int currentTime, int totalTime) {
+  //  printf("%d %d %f\n",currentTime,totalTime,(double)currentTime/(double)totalTime);
+    multiply = (double)currentTime / (double)totalTime * maxMultiply;
 }
 
 void buildVerletList() {
@@ -843,41 +851,40 @@ void write_contour_file() {
         printf("Contour file not created, errno = %d\n", errno);
         exit(EXIT_FAILURE);
     }
-
-    fprintf(f, "%d\n", N_pinning * 3);
-
-    for (int i = 0; i < N_pinning * 3; i++) {
+    fprintf(f, "%d\n", N_pinning );
+    for (int i = 0; i < N_pinning ; i++) {
         fprintf(f, "%e\n", pinnings[i].coord.x);
         fprintf(f, "%e\n", pinnings[i].coord.y);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
         fprintf(f, "%e\n", pinnings[i].r);
-        if (pinnings[i].sinfi == 0.0) {
-            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].coord.y);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-
-            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].coord.y);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-        } else {
-            fprintf(f, "%e\n", pinnings[i].coord.x);
-            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-
-            fprintf(f, "%e\n", pinnings[i].coord.x);
-            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLx2);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-            fprintf(f, "%e\n", pinnings[i].r);
-        }
+//        if (pinnings[i].sinfi == 0.0) {
+//            fprintf(f, "%e\n", pinnings[i].coord.x + pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].coord.y);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//
+//            fprintf(f, "%e\n", pinnings[i].coord.x - pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].coord.y);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//        } else {
+//            fprintf(f, "%e\n", pinnings[i].coord.x);
+//            fprintf(f, "%e\n", pinnings[i].coord.y + pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//
+//            fprintf(f, "%e\n", pinnings[i].coord.x);
+//            fprintf(f, "%e\n", pinnings[i].coord.y - pinningLx2);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//            fprintf(f, "%e\n", pinnings[i].r);
+//        }
     }
+
     fclose(f);
     printf("Contour file written with %d circles\n", N_pinning * 3);
     fflush(stdout);
@@ -896,26 +903,29 @@ void write_statistics() {
     fprintf(statistics_file, "%d %f\n", t, avg_vx);
 }
 
-void write_cluster_statistics(){
-    int maxcluster=0, maxclusterindex=0;
-    int mincluster =N_vertex, minclusterindex =0;
-    double average=0.0;
+void write_cluster_statistics() {
+    int maxcluster = 0, maxclusterindex = 0;
+    int mincluster = N_vertex, minclusterindex = 0;
+    double average = 0.0;
     printf("Number of clusters = %d \n", N_clusters);
     for (int i = 0; i < N_clusters; i++) {
         printf("%d cluster with %d vertex\n", i, clusters[i]);
         average += clusters[i];
-        if(clusters[i]>maxcluster){
+        if (clusters[i] > maxcluster) {
             maxcluster = clusters[i];
             maxclusterindex = i;
         }
-        if(mincluster>clusters[i]){
+        if (mincluster > clusters[i]) {
             mincluster = clusters[i];
             minclusterindex = i;
         }
     }
-    if(N_clusters >= 2)
-        printf("The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",maxclusterindex,maxcluster,minclusterindex,mincluster,average/(double)N_vertex);
-    else  printf("The biggest cluster %d with %d vertex\n average cluster size %lf\n",maxclusterindex,maxcluster,average/(double)N_clusters);
+    if (N_clusters >= 2)
+        printf("The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",
+               maxclusterindex, maxcluster, minclusterindex, mincluster, average / (double) N_vertex);
+    else
+        printf("The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex, maxcluster,
+               average / (double) N_clusters);
 
 }
 
@@ -958,13 +968,14 @@ int properFilename(char *filename) {
     return result;
 }
 
-void allInit(){
+void allInit() {
+
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(10, 10, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(26, 26, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
-    ///init Particle: N_particles, sX+sY, dt, r, rv, temperature
-    init(N_pinning, 40.0, 0.002, 4.0, 6.0, 3.0);
+    ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
+    init(N_pinning, 40.0, 0.002, 4.0, 6.0, 3.0, 0.0, 1.0);
 
     initPinningSites();
 //    for (int i = 0; i < N_pinning; i++) {
@@ -973,7 +984,9 @@ void allInit(){
 //    }
 
     write_contour_file();
+
     write_gfile();
+
     // initParticles();
     initSquareParticles();
 //    for (int i = 0; i < N_particles; i++) {
@@ -989,14 +1002,14 @@ void allInit(){
 
 }
 
-void simulation(int time){
+void simulation(int time, int statisticTime) {
     for (t = 0; t < time; t++) {
         calculatePairwiseForcesWithVerlet();
 ////        calculatePairwiseForces();
 //        calculateExternalForces();
         calculateThermalForces();
         calculatePinningForces();
-        write_statistics();
+
         moveParticles();
         if (flag_to_rebuild_verlet) buildVerletList();
 
@@ -1006,6 +1019,10 @@ void simulation(int time){
 //                printf("id %d,szin %d\n", vertex[i].id, vertex[i].color);
 //            }
             write_cmovie();
+        }
+        if (t % statisticTime == 0) {
+            write_statistics();
+            calculateMultiply(t, time);
         }
         if (t % 500 == 0) {
             printf("time = %d\n", t);
@@ -1035,8 +1052,8 @@ int main(int argc, char *argv[]) {
 
 
     buildVerletList();
-    
-    simulation(100000);
+
+    simulation(100000, 300);
 
     calculateClusters();
     write_cluster_statistics();

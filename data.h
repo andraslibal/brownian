@@ -18,6 +18,8 @@ Particle *particles;    //list of particle
 int t;                  //time
 
 double temperature;     //homerseklet a reszecske mozgatashoz
+double multiply;        //szorzo az pairwais ero novelesere.
+double maxMultiply;
 
 ///Pinning
 int N_pinning;              //number of pinnings

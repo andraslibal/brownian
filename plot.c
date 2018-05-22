@@ -1841,9 +1841,18 @@ void plot_object(float x,float y,int color,int p_num,int Box,int Box2,
     /*XSetForeground(display,pixmap_gc,(BlackPixel(display,screen_num)));*/
     //3.11.05
     XSetForeground(display,pix_gc[color],c_map[color]);
+if (color<4)
+	{
     XDrawArc(display,pixmap,pix_gc[color],par_x-Box,par_y-Box,Box2,Box2,0,360*64); 
     XFillArc(display,pixmap,pix_gc[color],par_x-Box,par_y-Box,Box2,Box2,0,360*64); 
-  }
+	}
+else
+	{
+    XDrawArc(display,pixmap,pix_gc[color],par_x-2.5*Box,par_y-2.5*Box,2.5*Box2,2.5*Box2,0,360*64); 
+    XFillArc(display,pixmap,pix_gc[color],par_x-2.5*Box,par_y-2.5*Box,2.5*Box2,2.5*Box2,0,360*64); 
+	}
+  
+}
   else {
     XSetForeground(display,pixmap_gc,(WhitePixel(display,screen_num)));
     XDrawArc(display,pixmap,pixmap_gc,par_x-Box,par_y-Box,Box2,Box2,0,360*64); 
