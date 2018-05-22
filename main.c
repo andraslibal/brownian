@@ -705,10 +705,6 @@ void calculateClusters() {
     }
 
     free(indicesToCheck);
-
-    printf("Number of clusters = %d\n", N_clusters);
-    for (int i = 0; i < N_clusters; i++)
-        printf("%d cluster with %d vertex\n", i, clusters[i]);
 }
 
 void buildVerletList() {
@@ -836,7 +832,6 @@ void write_gfile() {
     fprintf(f, "loadcontour contour.txt\n");
     fprintf(f, "cmovie\n");
     fclose(f);
-    printf("Gfile created\n");
     fflush(stdout);
 }
 
@@ -901,6 +896,29 @@ void write_statistics() {
     fprintf(statistics_file, "%d %f\n", t, avg_vx);
 }
 
+void write_cluster_statistics(){
+    int maxcluster=0, maxclusterindex=0;
+    int mincluster =N_vertex, minclusterindex =0;
+    double average=0.0;
+    printf("Number of clusters = %d \n", N_clusters);
+    for (int i = 0; i < N_clusters; i++) {
+        printf("%d cluster with %d vertex\n", i, clusters[i]);
+        average += clusters[i];
+        if(clusters[i]>maxcluster){
+            maxcluster = clusters[i];
+            maxclusterindex = i;
+        }
+        if(mincluster>clusters[i]){
+            mincluster = clusters[i];
+            minclusterindex = i;
+        }
+    }
+    if(N_clusters >= 2)
+        printf("The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",maxclusterindex,maxcluster,minclusterindex,mincluster,average/(double)N_vertex);
+    else  printf("The biggest cluster %d with %d vertex\n average cluster size %lf\n",maxclusterindex,maxcluster,average/(double)N_clusters);
+
+}
+
 void start() {
     printf("\tLet's do it!\n");
     time(&time_begin);
@@ -940,19 +958,9 @@ int properFilename(char *filename) {
     return result;
 }
 
-int main(int argc, char *argv[]) {
-    char filename[100] = {0};
-    if (argc > 1) {
-        char *inputParameter = argv[1];
-        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
-                sizeof(filename));
-    } else {
-        strncpy(filename, "result.mvi", sizeof(filename));
-    }
-
-    start();
+void allInit(){
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(20, 20, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(10, 10, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature
@@ -979,16 +987,10 @@ int main(int argc, char *argv[]) {
 //               vertex[i].particles[1], vertex[i].particles[2], vertex[i].particles[3]);
 //    }
 
-    buildVerletList();
+}
 
-    moviefile = fopen(filename, "wb");
-    statistics_file = fopen("statistics.txt", "wt");
-    if (!moviefile || !statistics_file) {
-        printf(stderr, "Failed to open file.\n");
-        return 1;
-    }
-
-    for (t = 0; t < 100000; t++) {
+void simulation(int time){
+    for (t = 0; t < time; t++) {
         calculatePairwiseForcesWithVerlet();
 ////        calculatePairwiseForces();
 //        calculateExternalForces();
@@ -1010,8 +1012,34 @@ int main(int argc, char *argv[]) {
             fflush(stdout);
         }
     }
+}
+
+int main(int argc, char *argv[]) {
+    char filename[100] = {0};
+    if (argc > 1) {
+        char *inputParameter = argv[1];
+        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
+                sizeof(filename));
+    } else {
+        strncpy(filename, "result.mvi", sizeof(filename));
+    }
+
+    start();
+    allInit();
+    moviefile = fopen(filename, "wb");
+    statistics_file = fopen("statistics.txt", "wt");
+    if (!moviefile || !statistics_file) {
+        printf(stderr, "Failed to open file.\n");
+        return 1;
+    }
+
+
+    buildVerletList();
+    
+    simulation(100000);
 
     calculateClusters();
+    write_cluster_statistics();
 
     fclose(moviefile);
     end();

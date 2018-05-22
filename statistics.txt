@@ -1,4 +1,4 @@
-0 -0.019681
+0 -0.032343
 1 0.000000
 2 0.000000
 3 0.000000
@@ -99998,5 +99998,5 @@
 99997 0.000000
 99998 0.000000
 99999 0.000000
-Nr.Partic 800, System size: 40.00,
-Program ran: 285.00 seconds, 4.75 minutes.
+Nr.Partic 200, System size: 20.00,
+Program ran: 70.00 seconds, 1.17 minutes.
