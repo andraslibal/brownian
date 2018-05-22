@@ -84,9 +84,13 @@ int* vertex_type;
 // vertex color
 int* vertex_color;
 // number of neighbors for the vertex
-int* vertex_neighbor_number;
+int vertex_neighbor_number;
+// vertex's z type
+int *vertex_z_type;
 // neighbor pinning site's id
 int** vertex_neighbor_id;
+int* vertex_chess_color;
+int* particle_is_near_to_vertex;
 
 // temperature
 double T;
@@ -105,6 +109,7 @@ time_t ending_time = 0;
 int time_echo;
 int current_time = 0;
 int total_time = 0;
+double multiplier;
 
 void start_timing()
 {
@@ -160,6 +165,8 @@ void initParticles()
 	color =  new int[N];
 	q = new double[N];
 
+    particle_is_near_to_vertex = new int[N];
+
 	N_tabulate = 50000;
 	tabulated_force = new double[N_tabulate];
 
@@ -170,7 +177,8 @@ void initParticles()
 	dt = 0.01;
 	current_time = 0;
 	total_time = 300000;
-	time_echo = 500;
+    multiplier = 0;
+    time_echo = 500;
 
 	rebuild_verlet_flag = 1;
 	x_so_far = new double[N];
@@ -184,12 +192,12 @@ void initArraysForPinningSites(int multiplier)
 
 	r_pinning_site = 0.2;
 	half_length_pinning_site = 0.6;
-	K_max_pinning_site = 2.0;
+	K_max_pinning_site = 5.0;
 	K_middle_pinning_site = 0.1;
-	T = 1.0;
+	T = 3.0;
 
-	pinning_lattice_Nx = 2;
-	pinning_lattice_Ny = 4;
+	pinning_lattice_Nx = 10;
+	pinning_lattice_Ny = 10;
 	pinning_lattice_ax = 2.0;
 	pinning_lattice_ay = 2.0;
 
@@ -201,12 +209,14 @@ void initArraysForPinningSites(int multiplier)
 		Sx = pinning_lattice_Nx * pinning_lattice_ax;
 		Sy = pinning_lattice_Ny * pinning_lattice_ay;
 		N_vertex = pinning_lattice_Nx * pinning_lattice_Ny;
+	    vertex_neighbor_number = 4;
 	} else 
 	if (multiplier == 6)
 	{
 		Sx = pinning_lattice_Nx * pinning_lattice_ax * 3;
 		Sy = pinning_lattice_Ny * pinning_lattice_ay * sqrt(3);
 		N_vertex = pinning_lattice_Nx * pinning_lattice_Ny * 4;
+	    vertex_neighbor_number = 3;
 	}
 	Sx_2 = Sx / 2;
 	Sy_2 = Sy / 2;
@@ -231,8 +241,9 @@ void initArraysForPinningSites(int multiplier)
 	y_vertex = new double[N_vertex];
 	vertex_color = new int[N_vertex];
 	vertex_type = new int[N_vertex];
-	vertex_neighbor_number = new int[N_vertex];
+    vertex_z_type = new int[N_vertex];
 	vertex_neighbor_id = new int*[N_vertex];
+    vertex_chess_color = new int[N_vertex];
 }
 
 void freeData()
@@ -248,6 +259,7 @@ void freeData()
 	delete[] q;
 	delete[] x_so_far;
 	delete[] y_so_far;
+    delete[] particle_is_near_to_vertex;
 
 	delete[] x_pinning_site;
 	delete[] y_pinning_site;
@@ -265,11 +277,12 @@ void freeData()
 	delete[] y_vertex;
 	delete[] vertex_color;
 	delete[] vertex_type;
-	delete[] vertex_neighbor_number;
+	delete[] vertex_z_type;
 
 	for (i = 0; i < N_vertex; i++)
 		delete[] vertex_neighbor_id[i];
 	delete[] vertex_neighbor_id;
+    delete[] vertex_chess_color;
 }
 
 void generateCoordinates()
@@ -376,6 +389,7 @@ void putParticleInPinningSite()
 		fy[i] = 0.0;
 		x_so_far[i] = 0.0;
 		y_so_far[i] = 0.0;
+        particle_is_near_to_vertex[i] = 0;
 	}
 }
 
@@ -392,20 +406,29 @@ void initSquareVerteces()
 		x = 0.0;
 		for (j = 0; j < pinning_lattice_Nx; j++)
 		{
+            // 0 - pinning site from right
+            // 1 - pinning site from bottom
+            // 2 - pinning site from top
+            // 3 - pinning site from left
 			x_vertex[k] = x;
 			y_vertex[k] = y;
 			vertex_type[k] = 0;
 			vertex_color[k] = 4;
+            vertex_chess_color[k] = (i + j) % 2;
+            vertex_z_type[k] = 4;
 
-			vertex_neighbor_number[k] = 4;
-			vertex_neighbor_id[k] = new int[vertex_neighbor_number[k]];
+			vertex_neighbor_id[k] = new int[vertex_neighbor_number];
 			if (i == 0) {
-				vertex_neighbor_id[k][1] = 2 * (pinning_lattice_Nx * pinning_lattice_Ny - j) - 1;
+                if (j == 0) {
+                    vertex_neighbor_id[k][1] = 2 * (pinning_lattice_Nx * pinning_lattice_Ny) - 1;
+                } else {
+                    vertex_neighbor_id[k][1] = 2 * (pinning_lattice_Nx * (pinning_lattice_Ny - 1) + j) - 1;
+                }
 			} else {
 				if (j == 0) {
 					vertex_neighbor_id[k][1] = i * pinning_lattice_Nx * 2 - 1;
 				} else {
-					vertex_neighbor_id[k][1] = 2 * ((i - 1) * pinning_lattice_Nx) + 1;
+					vertex_neighbor_id[k][1] = 2 * ((i - 1) * pinning_lattice_Nx + j) - 1;
 				}
 			}
 			vertex_neighbor_id[k][0] = 2 * k;
@@ -413,8 +436,8 @@ void initSquareVerteces()
 				vertex_neighbor_id[k][2] = pinning_lattice_Nx * 2 * (i + 1) - 1;
 				vertex_neighbor_id[k][3] = pinning_lattice_Nx * 2 * (i + 1) - 2;
 			} else  {
-				vertex_neighbor_id[k][2] = 2 * (pinning_lattice_Nx * i + j - 1);
-				vertex_neighbor_id[k][3] = 2 * (pinning_lattice_Nx * i + j - 1) + 1;
+				vertex_neighbor_id[k][2] = 2 * (pinning_lattice_Nx * i + j - 1) + 1;
+				vertex_neighbor_id[k][3] = 2 * (pinning_lattice_Nx * i + j - 1);
 			}
 			x += pinning_lattice_ax;
 			k++;
@@ -445,6 +468,7 @@ void initHexaVerteces()
 		x = 0.0;
 		for (j = 0; j < pinning_lattice_Ny; j++)
 		{
+            // be kell tenni a chess color meghatarozasar es annak a meghatarozasat, hogy melyik pinning siteok vannak hozza kozel
 			x_vertex[k] = x;
 			y_vertex[k] = y;
 			vertex_type[k] = 0;
@@ -647,18 +671,40 @@ void initHexaPinningSites()
 	}
 }
 
+void calculateGroudState(int i)
+{
+    int right_pinning_site,
+        left_pinning_site,
+        bottom_pinning_site,
+        top_pinning_site;
+    
+    right_pinning_site = vertex_neighbor_id[i][0];
+    left_pinning_site = vertex_neighbor_id[i][3];
+    bottom_pinning_site = vertex_neighbor_id[i][1];
+    top_pinning_site = vertex_neighbor_id[i][2];
+
+    if (right_pinning_site != -1 && left_pinning_site != -1)
+        if (particle_is_near_to_vertex[right_pinning_site] && particle_is_near_to_vertex[left_pinning_site])
+            vertex_type[i] = 5 + vertex_chess_color[i];
+        else
+            if (bottom_pinning_site != -1 && top_pinning_site != -1)
+                if (particle_is_near_to_vertex[bottom_pinning_site] && particle_is_near_to_vertex[top_pinning_site])
+                    vertex_type[i] = 6 - vertex_chess_color[i];
+}
+
 void calculateVertexType()
 {
 	int i, j;
 	int particle_id;
 	double diffX, diffY;
+    double x_rotated, y_rotated;
 
 	// for each vertex is calculating it's type, which means iterating through it's neighbor 
 	// pinning sites and defining whather it's particle is close enough to the vertex or not
 	for (i = 0; i < N_vertex; i++)
 	{
 		vertex_type[i] = 0;
-		for (j = 0; j < vertex_neighbor_number[i]; j++)
+		for (j = 0; j < vertex_neighbor_number; j++)
 		{
 			particle_id = particle_ID[vertex_neighbor_id[i][j]];
 			// calculating the particles distance, from the vertex
@@ -670,11 +716,21 @@ void calculateVertexType()
 			if (diffY < -Sy_2) diffY += Sy;
 			if (diffY > Sy_2) diffY -= Sy;
 
+            x_rotated = diffX * cos_fi[particle_id] + diffY * sin_fi[particle_id];
+		    y_rotated = -diffX * sin_fi[particle_id] + diffY * cos_fi[particle_id];
+
 			// it won't work well if pinning_lattice_az is different from pinning_lattice_ay
-			if (diffX * diffX + diffY * diffY >= pinning_lattice_ax / 4)
+            // if the particle is closet than the half of the pinning length, then:
+			if (x_rotated * x_rotated + y_rotated * y_rotated <= pinning_lattice_ax * pinning_lattice_ax / 4.0)
+            {
 				vertex_type[i] ++;
+                particle_is_near_to_vertex[particle_id] = 1;
+            } else {
+                particle_is_near_to_vertex[particle_id] = 0;
+            }
 		}
-		vertex_color[i] = 4 + vertex_type[i];
+        if (vertex_type[i] == 2) calculateGroudState(i);
+		vertex_color[i] = 2 + vertex_type[i];
 	}
 }
 
@@ -690,7 +746,7 @@ void calculateTabulatedForces()
 	tab_start = r;
 
 	for (i = 0; i < N_tabulate; i++) {
-		tabulated_force[i] = exp(- r / r0) / r2 * r;
+		tabulated_force[i] = exp(- r / r0) / r2 / r;
 		r2 += tab_measure;
 		r = sqrt(r2);
 	}
@@ -764,7 +820,7 @@ void colorVerlet()
 	}
 }
 
-void calculateForces()
+void calculatePairwiseForces()
 {
 	int it, i, j, tab_index;
 	double f;
@@ -789,7 +845,7 @@ void calculateForces()
 		else tab_index = (int) floor((distance - tab_start) / tab_measure);
   
 		if (tab_index >= 50000) f = 0.0;
-		else f = tabulated_force[tab_index];
+		else f = tabulated_force[tab_index] * multiplier;
 
 		fx[i] += f * diffX;
 		fy[i] += f * diffY;
@@ -886,8 +942,8 @@ void calculateModifiedPinningiteForces()
 		fy[j] += fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
 		
 		// circle shaped
-		//fx[j] += -K_max_pinning_site *diffX;
-		//fy[j] += -K_max_pinning_site *diffY;
+		//fx[j] += -K_max_pinning_site * diffX;
+		//fy[j] += -K_max_pinning_site * diffY;
 	}
 }
 
@@ -954,11 +1010,75 @@ void writeContourFile()
 {
 	ofstream f("../Plotter/contour.txt");
 	double sqrt3;
+    int i, j;
 	
 	sqrt3 = sqrt(3);
 	f << N_pinning_sites * 3 << endl;
 
-	for(int i = 0; i < N_pinning_sites; i++)
+    // for(j = 0; j < vertex_neighbor_number; j++)
+	// {
+    //     i = vertex_neighbor_id[49][j];
+	// 	f << x_pinning_site[i] << endl;
+	// 	f << y_pinning_site[i] << endl;
+	// 	f << r_pinning_site << endl;
+	// 	f << r_pinning_site << endl;
+	// 	f << r_pinning_site << endl;
+
+	// 	if (cos_fi[i] == 1)
+	// 	{
+	// 		f << x_pinning_site[i] + half_length_pinning_site << endl;
+	// 		f << y_pinning_site[i] << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+
+	// 		f << x_pinning_site[i] - half_length_pinning_site << endl;
+	// 		f << y_pinning_site[i] << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 	} else 
+	// 	if (cos_fi[i] == cos(PI / 3) && sin_fi[i] == sin(PI / 3)) {
+	// 		f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+	// 		f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+
+	// 		f << x_pinning_site[i] - half_length_pinning_site / 2 << endl;
+	// 		f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 	} else 
+	// 	if (cos_fi[i] == 0) {
+	// 		f << x_pinning_site[i] << endl;
+	// 		f << y_pinning_site[i] + half_length_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+
+	// 		f << x_pinning_site[i] << endl;
+	// 		f << y_pinning_site[i] - half_length_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 	} else {
+	// 		f << x_pinning_site[i] - half_length_pinning_site / 2<< endl;
+	// 		f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+
+	// 		f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+	// 		f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 		f << r_pinning_site << endl;
+	// 	}
+	// }
+
+	for(i = 0; i < N_pinning_sites; i++)
 	{
 		f << x_pinning_site[i] << endl;
 		f << y_pinning_site[i] << endl;
@@ -1018,7 +1138,6 @@ void writeContourFile()
 			f << r_pinning_site << endl;
 			f << r_pinning_site << endl;
 		}
-
 	}
 	f.close();
 	
@@ -1071,13 +1190,18 @@ void writeGfile()
 {
 	ofstream f("../Plotter/gfile");
 
-	f << "set xrange -5 " << (int) Sx + 5 << endl;
-	f << "set yrange -5 " << (int) Sy + 5 << endl;
+	f << "set xrange -1 " << (int) Sx + 1 << endl;
+	f << "set yrange -1 " << (int) Sy + 1 << endl;
 	f << "loadcolormap colors.txt" << endl;
 	f << "loadcontour contour.txt" << endl;
 	f << "cmovie" << endl;
 
 	f.close();
+}
+
+void writeStatistics()
+{
+
 }
 
 int main(int argc, char* argv[]) 
@@ -1123,7 +1247,7 @@ int main(int argc, char* argv[])
 			// colorVerlet();
 		}
 
-		// calculateForces();
+		calculatePairwiseForces();
 		// calculateExternalForces();
 		calculateThermalForce();
 		calculateModifiedPinningiteForces();
@@ -1131,7 +1255,12 @@ int main(int argc, char* argv[])
 		moveParticles();
 
 		if (current_time % 100 == 0)
+        {
+            calculateVertexType();
 			writeCmovie(f, current_time);
+            multiplier = current_time / total_time;
+            writeStatistics();
+        }
 	}
 	fclose(f);
 	freeData();
