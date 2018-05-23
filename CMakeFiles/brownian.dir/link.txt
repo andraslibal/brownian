@@ -1,1 +1,1 @@
-/usr/bin/cc   -rdynamic CMakeFiles/brownian.dir/main.c.o  -o brownian -lm 
+icc  -xAVX -O3 -DNDEBUG -fp-model fast=2   CMakeFiles/brownian.dir/main.c.o  -o brownian -rdynamic -lm 

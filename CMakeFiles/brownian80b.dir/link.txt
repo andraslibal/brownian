@@ -1,0 +1,1 @@
+/usr/bin/cc  -mavx   CMakeFiles/brownian80b.dir/main.c.o  -o brownian80b -rdynamic -lm 

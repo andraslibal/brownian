@@ -1,4 +1,4 @@
-#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
 
 #IncludeRegexScan: ^.*$
 
@@ -28,8 +28,6 @@ data.h
 errno.h
 -
 stdint.h
--
-math.h
 -
 
 /home/rebeka/Documents/brownian/particle.h

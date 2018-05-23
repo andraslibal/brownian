@@ -5,11 +5,11 @@
 
 
 struct Pinning{
-    int id;             //id of a pinning
+    u_short id;             //id of a pinning
     Coordinate coord;   //x,y coordinate
     double r;           //kor sugara
     double fMax;       //
-    int particlesId; //melyik reszecske tartozik hozza, max 1
+    u_short particlesId; //melyik reszecske tartozik hozza, max 1
 
     double lx,ly;       //koztes resz hossza,szelessege
     double sinfi,cosfi; //mennyire van megdolve
