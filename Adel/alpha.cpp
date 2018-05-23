@@ -109,7 +109,7 @@ time_t ending_time = 0;
 int time_echo;
 int current_time = 0;
 int total_time = 0;
-double multiplier;
+double multiplier, max_multiplier;
 
 void start_timing()
 {
@@ -174,10 +174,11 @@ void initParticles()
 	r_verlet = 6.0;
 	r_travel_max = r_verlet - r0;
 
-	dt = 0.01;
+	dt = 0.002;
 	current_time = 0;
 	total_time = 100000;
-    multiplier = 0;
+    multiplier = 0.0;
+    max_multiplier = 1.0;
     time_echo = 500;
 
 	rebuild_verlet_flag = 1;
@@ -813,10 +814,12 @@ void colorVerlet()
 		if (q[i] == 1.0) color[i] = 1;
 	}
 
+	color[30] = 6;
+
 	for(i = 0; i < verlet.size(); i++)
 	{
-		if (verlet.at(i).at(0) == 30) color[verlet.at(i).at(1)] = 2;
-		if (verlet.at(i).at(1) == 30) color[verlet.at(i).at(0)] = 2;
+		if (verlet.at(i).at(0) == 30) color[verlet.at(i).at(1)] = 10;
+		if (verlet.at(i).at(1) == 30) color[verlet.at(i).at(0)] = 10;
 	}
 }
 
@@ -824,7 +827,7 @@ void calculatePairwiseForces()
 {
 	int it, i, j, tab_index;
 	double f;
-	double diffX, diffY, distance;
+	double diffX, diffY, distance2;
 
 	for (it = 0; it < verlet.size(); it++)
 	{
@@ -839,9 +842,9 @@ void calculatePairwiseForces()
 		if (diffY < -Sy_2) diffY += Sy;
 		if (diffY > Sy_2) diffY -= Sy;
 
-		distance = diffX * diffX + diffY * diffY;
-		if (distance < tab_start) tab_index = 0;
-		else tab_index = (int) floor((distance - tab_start) / tab_measure);
+		distance2 = diffX * diffX + diffY * diffY;
+		if (distance2 < tab_start) tab_index = 0;
+		else tab_index = (int) floor((distance2 - tab_start) / tab_measure);
   
 		if (tab_index >= N_tabulate) f = 0.0;
 		else f = tabulated_force[tab_index] * multiplier;
@@ -921,23 +924,22 @@ void calculateModifiedPinningiteForces()
 		x_rotated = diffX * cos_fi[i] - diffY * sin_fi[i];
 		y_rotated = diffX * sin_fi[i] + diffY * cos_fi[i];
 
-		if (x_rotated >= half_length_pinning_site) 
-		{
-			x_rotated = x_rotated - half_length_pinning_site;
-			fx_rotated = -K_max_pinning_site * x_rotated;
-			fy_rotated = -K_max_pinning_site * y_rotated;
-
-		} else
 		if (x_rotated <= -half_length_pinning_site) 
 		{
 			x_rotated = x_rotated + half_length_pinning_site;
 			fx_rotated = -K_max_pinning_site * x_rotated;
 			fy_rotated = -K_max_pinning_site * y_rotated;
-		} else {
-			fx_rotated = K_middle_pinning_site * (half_length_pinning_site - fabs(x_rotated));
-            if (x_rotated < 0) fx_rotated *= -1;
-			fy_rotated = -K_max_pinning_site * y_rotated;
-		}
+		} else 
+			if (x_rotated >= half_length_pinning_site) 
+			{
+				x_rotated = x_rotated - half_length_pinning_site;
+				fx_rotated = -K_max_pinning_site * x_rotated;
+				fy_rotated = -K_max_pinning_site * y_rotated;
+			} else {
+				fx_rotated = K_middle_pinning_site * (half_length_pinning_site - fabs(x_rotated));
+				if (x_rotated < 0) fx_rotated = -fx_rotated;
+				fy_rotated = -K_max_pinning_site * y_rotated;
+			}
 
 		fx[j] += fx_rotated * cos_fi[i] + fy_rotated * sin_fi[i];
 		fy[j] += -fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
@@ -1255,7 +1257,7 @@ int main(int argc, char* argv[])
         {
             calculateVertexType();
 			writeCmovie(f, current_time);
-            multiplier = (double) current_time / (double) total_time;
+            multiplier = (double) current_time / (double) total_time * max_multiplier;
             writeStatistics();
         }
 	}
