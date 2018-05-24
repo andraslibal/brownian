@@ -31,7 +31,7 @@ void init(int nrParticles, double systemSize, int nrPinnings, double timeStep, d
 
     //Pinnings
     N_pinning = nrPinnings;
-    pinnings = (Pinning *) malloc(N * sizeof(Pinning));
+    pinnings = (Pinning *) malloc(N_pinning * sizeof(Pinning));
     if (!pinnings) {
         perror("Allocation problem! PinningSites");
         exit(EXIT_FAILURE);
@@ -163,7 +163,7 @@ void initPinningSites() {
 void calculatePinningForces() {
     double dx, dy, dr2, f, fx, fy;
 
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N_pinning; i++)
         for (int j = 0; j < N_pinning; j++) {
             dx = particles[i].coord.x - pinnings[j].coord.x;
             dy = particles[i].coord.y - pinnings[j].coord.y;
@@ -340,7 +340,7 @@ void write_cmovie() {
     fwrite(&intholder, sizeof(int), 1, moviefile);
 
     for (i = 0; i < N; i++) {
-        intholder = particles[i].color + 2;
+        intholder = particles[i].color + 4;
         fwrite(&intholder, sizeof(int), 1, moviefile);
         intholder = particles[i].id;//ID
         fwrite(&intholder, sizeof(int), 1, moviefile);
@@ -437,7 +437,7 @@ int main(int argc, char *argv[]) {
 
     start();
     ///inicializalas: N, sX+sY, N_pinning, dt, r, rv
-    init(800, 40.0, 200, 0.002, 4.0, 6.0);
+    init(400, 40.0, 200, 0.002, 4.0, 6.0);
 
     initParticles();
     initPinningSites();
