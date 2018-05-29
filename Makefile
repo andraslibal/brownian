@@ -111,17 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named brownian602
+# Target rules for targets named brownian
 
 # Build rule for target.
-brownian602: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 brownian602
-.PHONY : brownian602
+brownian: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 brownian
+.PHONY : brownian
 
 # fast build rule for target.
-brownian602/fast:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/build
-.PHONY : brownian602/fast
+brownian/fast:
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/build
+.PHONY : brownian/fast
 
 main.o: main.c.o
 
@@ -129,7 +129,7 @@ main.o: main.c.o
 
 # target to build an object file
 main.c.o:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/main.c.o
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/main.c.o
 .PHONY : main.c.o
 
 main.i: main.c.i
@@ -138,7 +138,7 @@ main.i: main.c.i
 
 # target to preprocess a source file
 main.c.i:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/main.c.i
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/main.c.i
 .PHONY : main.c.i
 
 main.s: main.c.s
@@ -147,7 +147,7 @@ main.s: main.c.s
 
 # target to generate assembly for a file
 main.c.s:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/main.c.s
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/main.c.s
 .PHONY : main.c.s
 
 # Help Target
@@ -158,7 +158,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... brownian602"
+	@echo "... brownian"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

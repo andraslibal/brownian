@@ -10,6 +10,6 @@ set(CMAKE_C_FLAGS "-mavx -O3")
 set(CMAKE_C_FLAGS_RELEASE  "-DNDEBUG -fp-model fast=2")
 
 
-add_executable(brownian602 main.c particle.h data.h pinning.h vertex.h)
+add_executable(brownian main.c particle.h data.h pinning.h vertex.h)
 
-target_link_libraries(brownian602 m)
+target_link_libraries(brownian m)

@@ -309,6 +309,33 @@ void initSquareParticles() {
     }
 }
 
+void initSquareParticlesRandom() {
+
+    for (int i = 0; i < N_pinning; i++) {
+        particles[i].id =(u_short) i;
+        particles[i].color = 1; //color
+        particles[i].q = 1;
+        particles[i].coord.x = pinnings[i].coord.x;
+        particles[i].coord.y = pinnings[i].coord.y;
+        if(Rand()<0.5) {
+            particles[i].coord.x += (-1)*pinnings[i].lx * pinnings[i].cosfi;
+            particles[i].coord.y += (-1)*pinnings[i].lx * pinnings[i].sinfi;
+        }else{
+            particles[i].coord.x += pinnings[i].lx * pinnings[i].cosfi;
+            particles[i].coord.y += pinnings[i].lx * pinnings[i].sinfi;
+        }
+
+
+        particles[i].fx = 0.0; //force
+        particles[i].fy = 0.0;
+        //particles[i].drx = 0.0;
+        //particles[i].dry = 0.0;
+        particles[i].mortonId = (u_short) generateMort((uint32_t) particles[i].coord.x, (uint32_t) particles[i].coord.y);
+        particles[i].pinningSiteId = pinnings[i].id;
+        pinnings[i].particlesId = particles[i].id;
+    }
+}
+
 void initSquareVertex() {
     int k = 0; // hanyadik vertexnel tartunk
     int pinningNX2 = 2 * pinningNX;
@@ -900,7 +927,7 @@ void write_cmovie() {
 
 void write_gfile() {
     FILE *f;
-    f = fopen("gfile60", "wt");
+    f = fopen("gfile", "wt");
     if (f == NULL) {
         printf("Gfile not created= %d\n", errno);
         exit(EXIT_FAILURE);
@@ -980,8 +1007,10 @@ void write_cluster_statistics() {
     int mincluster = N_vertex, minclusterindex = 0;
     double average = 0.0;
     printf("Number of clusters = %d \n", N_clusters);
+    fprintf(statistics_file,"Number of clusters = %d \n", N_clusters);
     for (int i = 0; i < N_clusters; i++) {
         printf("%d cluster with %d vertex\n", i, clusters[i]);
+        fprintf(statistics_file,"%d cluster with %d vertex\n", i, clusters[i]);
         average += clusters[i];
         if (clusters[i] > maxcluster) {
             maxcluster = clusters[i];
@@ -995,9 +1024,12 @@ void write_cluster_statistics() {
     if (N_clusters >= 2)
         printf("The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",
                maxclusterindex, maxcluster, minclusterindex, mincluster, average / (double) N_vertex);
+
     else
         printf("The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex, maxcluster,
                average / (double) N_clusters);
+        fprintf(statistics_file,"The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex, maxcluster,
+           average / (double) N_clusters);
 
 }
 
@@ -1059,7 +1091,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(60, 60, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(20, 20, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -1071,7 +1103,8 @@ void allInit() {
     write_gfile();
 
     // initParticles();
-    initSquareParticles();
+    //initSquareParticles();
+    initSquareParticlesRandom();
 
     //sortParticles();
 
@@ -1126,10 +1159,11 @@ int main(int argc, char *argv[]) {
 
 
     buildVerletList();
+    calculateVertexTypes();
 
     start();
 
-    simulation(200000, 300);
+    simulation(100000, 300);
 
     calculateClusters();
     write_cluster_statistics();

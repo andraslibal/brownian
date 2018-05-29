@@ -60,39 +60,39 @@ CMAKE_SOURCE_DIR = /home/rebeka/Documents/brownian
 CMAKE_BINARY_DIR = /home/rebeka/Documents/brownian
 
 #=============================================================================
-# Target rules for target CMakeFiles/brownian602.dir
+# Target rules for target CMakeFiles/brownian.dir
 
 # All Build rule for target.
-CMakeFiles/brownian602.dir/all:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/depend
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rebeka/Documents/brownian/CMakeFiles --progress-num=1,2 "Built target brownian602"
-.PHONY : CMakeFiles/brownian602.dir/all
+CMakeFiles/brownian.dir/all:
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/depend
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rebeka/Documents/brownian/CMakeFiles --progress-num=1,2 "Built target brownian"
+.PHONY : CMakeFiles/brownian.dir/all
 
 # Include target in all.
-all: CMakeFiles/brownian602.dir/all
+all: CMakeFiles/brownian.dir/all
 
 .PHONY : all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/brownian602.dir/rule: cmake_check_build_system
+CMakeFiles/brownian.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/rebeka/Documents/brownian/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/brownian602.dir/all
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/brownian.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/rebeka/Documents/brownian/CMakeFiles 0
-.PHONY : CMakeFiles/brownian602.dir/rule
+.PHONY : CMakeFiles/brownian.dir/rule
 
 # Convenience name for target.
-brownian602: CMakeFiles/brownian602.dir/rule
+brownian: CMakeFiles/brownian.dir/rule
 
-.PHONY : brownian602
-
-# clean rule for target.
-CMakeFiles/brownian602.dir/clean:
-	$(MAKE) -f CMakeFiles/brownian602.dir/build.make CMakeFiles/brownian602.dir/clean
-.PHONY : CMakeFiles/brownian602.dir/clean
+.PHONY : brownian
 
 # clean rule for target.
-clean: CMakeFiles/brownian602.dir/clean
+CMakeFiles/brownian.dir/clean:
+	$(MAKE) -f CMakeFiles/brownian.dir/build.make CMakeFiles/brownian.dir/clean
+.PHONY : CMakeFiles/brownian.dir/clean
+
+# clean rule for target.
+clean: CMakeFiles/brownian.dir/clean
 
 .PHONY : clean
 
