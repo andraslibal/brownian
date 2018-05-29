@@ -96,13 +96,23 @@ void tabulateForces() {
 //    printf("%5d %.2f %.2f %.2f %.8f\n", N_tabulated - 1, x, x2, f, tabulated_f_per_r[N_tabulated - 1]);
 }
 
+void initVertexStat() {
+    avgNCluster = 0;
+    avgSmallCluster = 0;
+    avgBigCluster = 0;
+    avgAvgCluster = 0.0;
+    for (int j = 0; j < sumVertexTypes; j++)
+        vertexTypes[j] = 0;
+}
+
+
 //alapbeallitasok, Particle,system,verlet,tabulated force, temperature,multiply, Vertexszam
 void init(int nrParticles, double systemSize, double timeStep, double cutOff, double verletCutOff, double temp,
           double mult, double maxmult) {
     N_particles = nrParticles;
     particles = NULL;
     particles = (Particle *) realloc(particles, N_particles * sizeof(Particle));
-    printf("Size of a particle in memory is = %d bytes\n", (int)sizeof(Particle));
+   // printf("Size of a particle in memory is = %d bytes\n", (int) sizeof(Particle));
 //    printf("Address of particle array is %ld\n", particles);
 //    printf("Total size of array is %d\n", N_particles * sizeof(Particle));
 //    for (int i = 0; i < 10; i++)
@@ -175,6 +185,17 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
         perror("Allocation problem with Cluster list, exiting");
         exit(EXIT_FAILURE);
     }
+
+    ///Statistics
+    sumVertexTypes = 7;
+    vertexTypes = (int *) malloc(sumVertexTypes * sizeof(int));
+    if (clusters == NULL) {
+        perror("Allocation problem with VertexTypes list, exiting");
+        exit(EXIT_FAILURE);
+    }
+    initVertexStat();
+    N_average = 0;
+
 
     printf("General Init done!\n N_particles=%d N_pinning=%d, N_vertex=%d, sX=%.2f sY=%.2f\n", N_particles, N_pinning,
            N_vertex, sX, sY);
@@ -282,7 +303,7 @@ void initParticles() {
         particles[i].coord.y = position.y;
         particles[i].fx = 0.0; //force
         particles[i].fy = 0.0;
-      //  particles[i].drx = 0.0;
+        //  particles[i].drx = 0.0;
         //particles[i].dry = 0.0;
         particles[i].pinningSiteId = 0;
         i++;
@@ -292,7 +313,7 @@ void initParticles() {
 
 void initSquareParticles() {
     for (int i = 0; i < N_pinning; i++) {
-        particles[i].id =(u_short) i;
+        particles[i].id = (u_short) i;
         particles[i].color = 1; //color
         particles[i].q = 1;
         particles[i].coord.x = pinnings[i].coord.x;
@@ -303,7 +324,8 @@ void initSquareParticles() {
         particles[i].fy = 0.0;
         //particles[i].drx = 0.0;
         //particles[i].dry = 0.0;
-        particles[i].mortonId = (u_short) generateMort((uint32_t) particles[i].coord.x, (uint32_t) particles[i].coord.y);
+        particles[i].mortonId = (u_short) generateMort((uint32_t) particles[i].coord.x,
+                                                       (uint32_t) particles[i].coord.y);
         particles[i].pinningSiteId = pinnings[i].id;
         pinnings[i].particlesId = particles[i].id;
     }
@@ -312,15 +334,15 @@ void initSquareParticles() {
 void initSquareParticlesRandom() {
 
     for (int i = 0; i < N_pinning; i++) {
-        particles[i].id =(u_short) i;
+        particles[i].id = (u_short) i;
         particles[i].color = 1; //color
         particles[i].q = 1;
         particles[i].coord.x = pinnings[i].coord.x;
         particles[i].coord.y = pinnings[i].coord.y;
-        if(Rand()<0.5) {
-            particles[i].coord.x += (-1)*pinnings[i].lx * pinnings[i].cosfi;
-            particles[i].coord.y += (-1)*pinnings[i].lx * pinnings[i].sinfi;
-        }else{
+        if (Rand() < 0.5) {
+            particles[i].coord.x += (-1) * pinnings[i].lx * pinnings[i].cosfi;
+            particles[i].coord.y += (-1) * pinnings[i].lx * pinnings[i].sinfi;
+        } else {
             particles[i].coord.x += pinnings[i].lx * pinnings[i].cosfi;
             particles[i].coord.y += pinnings[i].lx * pinnings[i].sinfi;
         }
@@ -330,14 +352,15 @@ void initSquareParticlesRandom() {
         particles[i].fy = 0.0;
         //particles[i].drx = 0.0;
         //particles[i].dry = 0.0;
-        particles[i].mortonId = (u_short) generateMort((uint32_t) particles[i].coord.x, (uint32_t) particles[i].coord.y);
+        particles[i].mortonId = (u_short) generateMort((uint32_t) particles[i].coord.x,
+                                                       (uint32_t) particles[i].coord.y);
         particles[i].pinningSiteId = pinnings[i].id;
         pinnings[i].particlesId = particles[i].id;
     }
 }
 
 void initSquareVertex() {
-    int k = 0; // hanyadik vertexnel tartunk
+    u_short k = 0; // hanyadik vertexnel tartunk
     int pinningNX2 = 2 * pinningNX;
     int i0, i1, i2, i3;
 
@@ -447,7 +470,7 @@ void stowPinning(Coordinate *right_coord, int i) {
 }
 
 void initPinningSites() {
-    int k = 0;
+    u_short k = 0;
 
     for (int i = 0; i < pinningNX; i++)
         for (int j = 0; j < pinningNY; j++) {
@@ -678,7 +701,7 @@ void calculatePairwiseForcesWithVerlet() {
         dr2 = dx * dx + dy * dy;
 
         if (dr2 < 0.01) tabulatedForceIndex = 0;
-        //else tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
+            //else tabulatedForceIndex = (int) floor((dr2 - tabulate_start) / tabulate_step);
         else tabulatedForceIndex = (int) ((dr2 - tabulate_start) / tabulate_step);
 
         if (tabulatedForceIndex >= N_tabulated) {
@@ -702,6 +725,7 @@ void calculateClusters() {
     for (int i = 0; i < N_vertex; i++) {
         vertex[i].clusterId = -1; //meg nem tartozik egyik clusterhez sem
     }
+    N_clusters=0;
 
     int currentVertex = 0;
     int nrVertex = 0; //adott clusterhez tartoz reszecskek szama
@@ -847,8 +871,8 @@ void buildVerletList() {
 
             }
         }
-       // particles[i].drx = 0.0;
-       // particles[i].dry = 0.0;
+        // particles[i].drx = 0.0;
+        // particles[i].dry = 0.0;
     }
 
     flag_to_rebuild_verlet = 0;
@@ -863,7 +887,7 @@ void moveParticles() {
         dy = particles[i].fy * dt;
         particles[i].coord.x += dx;
         particles[i].coord.y += dy;
-       // particles[i].drx += dx;
+        // particles[i].drx += dx;
         //particles[i].dry += dy;
         //out of box
         if (particles[i].coord.x < 0) particles[i].coord.x += sX;
@@ -992,14 +1016,56 @@ void write_contour_file() {
 
 void write_statistics() {
     double avg_vx = 0.0;
+
     for (int i = 0; i < N_particles; i++) {
         if (particles[i].color == 0) avg_vx += particles[i].fx;
         if (particles[i].color == 1) avg_vx -= particles[i].fx;
     }
 
+    printf("avg, %lf", avg_vx);
     avg_vx = avg_vx / (double) N_particles;
 
+    printf("avg, %lf", avg_vx);
     fprintf(statistics_file, "%d %f\n", t, avg_vx);
+}
+
+void calculateVertexStatistics() {
+    int maxcluster = 0;
+    int mincluster = N_vertex;
+    double average = 0.0;
+
+    for (int i = 0; i < N_vertex; i++) {
+        vertexTypes[vertex[i].type]++;
+    }
+
+    avgNCluster += N_clusters;
+    for (int i = 0; i < N_clusters; i++) {
+        average += clusters[i];
+        if (clusters[i] > maxcluster) {
+            maxcluster = clusters[i];
+        }
+        if (mincluster > clusters[i]) {
+            mincluster = clusters[i];
+        }
+    }
+
+    avgAvgCluster += average / (double)N_clusters;
+    avgBigCluster += maxcluster;
+    avgSmallCluster += mincluster;
+
+}
+
+void write_cluster_stat() {
+    ///time, cluster_type, cluster_type_avg, nrofcluster,bigcluster,smallcluster,avgCluster
+    fprintf(statistics_file,"%d ", t);
+    for (int i = 0; i < sumVertexTypes; i++)
+        fprintf(statistics_file,"%.2lf  ",  (double)(vertexTypes[i] % N_average));
+
+
+    fprintf(statistics_file, " %.2lf", (double) (avgNCluster % N_average));
+    fprintf(statistics_file, " %d", avgBigCluster % N_average);
+    fprintf(statistics_file, " %d", avgSmallCluster % N_average);
+    fprintf(statistics_file, " %.2lf\n", avgAvgCluster / (double)N_average);
 }
 
 void write_cluster_statistics() {
@@ -1007,10 +1073,10 @@ void write_cluster_statistics() {
     int mincluster = N_vertex, minclusterindex = 0;
     double average = 0.0;
     printf("Number of clusters = %d \n", N_clusters);
-    fprintf(statistics_file,"Number of clusters = %d \n", N_clusters);
+    fprintf(statistics_file, "Number of clusters = %d \n", N_clusters);
     for (int i = 0; i < N_clusters; i++) {
         printf("%d cluster with %d vertex\n", i, clusters[i]);
-        fprintf(statistics_file,"%d cluster with %d vertex\n", i, clusters[i]);
+        fprintf(statistics_file, "%d cluster with %d vertex\n", i, clusters[i]);
         average += clusters[i];
         if (clusters[i] > maxcluster) {
             maxcluster = clusters[i];
@@ -1021,15 +1087,19 @@ void write_cluster_statistics() {
             minclusterindex = i;
         }
     }
-    if (N_clusters >= 2)
+    if (N_clusters >= 2) {
         printf("The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",
                maxclusterindex, maxcluster, minclusterindex, mincluster, average / (double) N_vertex);
-
-    else
+        fprintf(statistics_file,
+                "The biggest cluster %d with %d vertex\n minim cluster %d with %d vertex\n average cluster %lf\n",
+                maxclusterindex, maxcluster, minclusterindex, mincluster, average / (double) N_vertex);
+    } else {
         printf("The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex, maxcluster,
                average / (double) N_clusters);
-        fprintf(statistics_file,"The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex, maxcluster,
-           average / (double) N_clusters);
+        fprintf(statistics_file, "The biggest cluster %d with %d vertex\n average cluster size %lf\n", maxclusterindex,
+                maxcluster,
+                average / (double) N_clusters);
+    }
 
 }
 
@@ -1054,8 +1124,8 @@ void sortParticles() {
     Particle part;
     printParticle();
     for (int i = 0; i < N_particles - 1; i++) {
-        for (int j = i+1; j < N_particles; j++) {
-            if(particles[i].mortonId>particles[j].mortonId) {
+        for (int j = i + 1; j < N_particles; j++) {
+            if (particles[i].mortonId > particles[j].mortonId) {
                 part = particles[j];
                 particles[j] = particles[i];
                 particles[i] = part;
@@ -1091,7 +1161,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(20, 20, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(10, 10, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -1126,10 +1196,14 @@ void simulation(int time, int statisticTime) {
 
         if (t % 100 == 0) {
             calculateVertexTypes();
+            calculateClusters();
+            calculateVertexStatistics();
             write_cmovie();
         }
         if (t % statisticTime == 0) {
-            write_statistics();
+            //write_statistics();
+            write_cluster_stat();
+            initVertexStat();
             calculateMultiply(t, time);
         }
         if (t % 500 == 0) {
@@ -1141,17 +1215,30 @@ void simulation(int time, int statisticTime) {
 
 int main(int argc, char *argv[]) {
     char filename[100] = {0};
+    char statfile[100] = {0};
+    char *be= (char *) malloc(100);
+    uint64_t seed = 0;
+
+    ///result, statistic,
     if (argc > 1) {
-        char *inputParameter = argv[1];
-        strncpy(filename, properFilename(inputParameter) ? strcat(inputParameter, ".mvi") : "result.mvi",
+        strcpy(be,argv[1]);
+        //be = argv[1];
+        strncpy(filename, properFilename(be) ? strcat(be, ".mvi") : "result.mvi",
                 sizeof(filename));
+        strcpy(be,argv[2]);
+        strncpy(statfile, properFilename(be) ? strcat(be, ".txt") : "statistics.txt",
+                sizeof(statfile));
+        seed = (uint64_t)argv[3];
     } else {
         strncpy(filename, "result.mvi", sizeof(filename));
+        strncpy(statfile, "statistics.txt", sizeof(statfile));
     }
 
+
+    setseed(seed);
     allInit();
     moviefile = fopen(filename, "wb");
-    statistics_file = fopen("statistics.txt", "wt");
+    statistics_file = fopen(statfile, "wt");
     if (!moviefile || !statistics_file) {
         perror("Failed to open file.\n");
         return 1;
@@ -1163,10 +1250,10 @@ int main(int argc, char *argv[]) {
 
     start();
 
-    simulation(100000, 300);
-
+    N_average = 300;
+    simulation(100000, N_average);
     calculateClusters();
-    write_cluster_statistics();
+    //write_cluster_statistics();
 
     fclose(moviefile);
     end();

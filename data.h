@@ -71,3 +71,12 @@ time_t time_end;
 ///statistic file, file with coordinates of the  particles
 FILE *statistics_file;
 FILE *moviefile;
+
+///Statistics
+int avgNCluster;
+int avgBigCluster;
+int avgSmallCluster;
+double avgAvgCluster;
+int *vertexTypes;
+int sumVertexTypes;
+int N_average;
