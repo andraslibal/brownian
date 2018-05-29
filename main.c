@@ -102,7 +102,7 @@ void init(int nrParticles, double systemSize, double timeStep, double cutOff, do
     N_particles = nrParticles;
     particles = NULL;
     particles = (Particle *) realloc(particles, N_particles * sizeof(Particle));
-    printf("Size of a particle in memory is = %d bytes\n", sizeof(Particle));
+    printf("Size of a particle in memory is = %d bytes\n", (int)sizeof(Particle));
 //    printf("Address of particle array is %ld\n", particles);
 //    printf("Total size of array is %d\n", N_particles * sizeof(Particle));
 //    for (int i = 0; i < 10; i++)
@@ -900,7 +900,7 @@ void write_cmovie() {
 
 void write_gfile() {
     FILE *f;
-    f = fopen("gfile", "wt");
+    f = fopen("gfile60", "wt");
     if (f == NULL) {
         printf("Gfile not created= %d\n", errno);
         exit(EXIT_FAILURE);
@@ -1059,7 +1059,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(80, 80, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(60, 60, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -1129,7 +1129,7 @@ int main(int argc, char *argv[]) {
 
     start();
 
-    simulation(100000, 300);
+    simulation(200000, 300);
 
     calculateClusters();
     write_cluster_statistics();

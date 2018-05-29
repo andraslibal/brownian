@@ -1,0 +1,1 @@
+/usr/bin/cc  -mavx -O3   CMakeFiles/brownian602.dir/main.c.o  -o brownian602 -rdynamic -lm 

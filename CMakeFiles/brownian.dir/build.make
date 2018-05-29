@@ -60,15 +60,15 @@ include CMakeFiles/brownian.dir/flags.make
 CMakeFiles/brownian.dir/main.c.o: CMakeFiles/brownian.dir/flags.make
 CMakeFiles/brownian.dir/main.c.o: main.c
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/rebeka/Documents/brownian/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/brownian.dir/main.c.o"
-	icc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/brownian.dir/main.c.o   -c /home/rebeka/Documents/brownian/main.c
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/brownian.dir/main.c.o   -c /home/rebeka/Documents/brownian/main.c
 
 CMakeFiles/brownian.dir/main.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/brownian.dir/main.c.i"
-	icc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/rebeka/Documents/brownian/main.c > CMakeFiles/brownian.dir/main.c.i
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/rebeka/Documents/brownian/main.c > CMakeFiles/brownian.dir/main.c.i
 
 CMakeFiles/brownian.dir/main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/brownian.dir/main.c.s"
-	icc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/rebeka/Documents/brownian/main.c -o CMakeFiles/brownian.dir/main.c.s
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/rebeka/Documents/brownian/main.c -o CMakeFiles/brownian.dir/main.c.s
 
 CMakeFiles/brownian.dir/main.c.o.requires:
 
