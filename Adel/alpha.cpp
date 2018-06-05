@@ -4,10 +4,14 @@
 #include <iomanip>
 #include <ios>
 #include <vector>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <cmath>
+#include <omp.h>
+#include <regex.h>
 
 #include "random_numrec.c"
+#include "jsmn.h"
 
 using namespace std;
 
@@ -37,6 +41,14 @@ double r_verlet;
 //distance a particle needs to travel
 //to potentially destroy the Verlet list
 double r_travel_max;
+// pinning site's id, in which the given particle is
+int* pinning_ID;
+// spin flip count
+int* spin_flip;
+// where is the particle in the pinning site (left or right end)
+// -1 - left
+//  1 - right
+int* position_in_pinning_site;
 
 //verlet lists
 vector<vector<int> > verlet;
@@ -73,9 +85,15 @@ double *sin_fi;
 int* particle_ID;
 // verteces near the pinning site
 int** verteces_id_near_pinning_site;
+// decimate number of pinning sites
+int decimate_number;
+// marking if pinning site is removed
+int* is_pinning_site_removed;
 
 // number of verteces
 int N_vertex;
+int N_vertex_z_type_3;
+int N_vertex_z_type_4;
 // coordinates of verteces
 double* x_vertex;
 double* y_vertex;
@@ -91,6 +109,9 @@ int *vertex_z_type;
 int** vertex_neighbor_id;
 int* vertex_chess_color;
 int* particle_is_near_to_vertex;
+int min_z_type;
+// topological charge on vertex
+int* vertex_q;
 
 // temperature
 double T;
@@ -99,6 +120,17 @@ int	pinning_lattice_Nx, pinning_lattice_Ny;
 double pinning_lattice_ax, pinning_lattice_ay;
 
 char* moviefile;
+char* statfile;
+
+int* vertex_average;
+int vertex_type_number;
+int charge_3_near_3;
+int charge_3_near_4;
+int charge_4_near_3;
+int charge_4_near_4;
+int N_z3_charged;
+int N_z4_charged;
+int stat_steps;
 
 //time
 double dt = 0.0;
@@ -110,6 +142,10 @@ int time_echo;
 int current_time = 0;
 int total_time = 0;
 double multiplier, max_multiplier;
+
+// variables for JSON parsing
+string JSON;
+jsmntok_t* t = NULL;
 
 void start_timing()
 {
@@ -132,28 +168,250 @@ void stop_timing()
 void readDataFromFile(const char* filename)
 {
 	ifstream f(filename);
-	if (f.is_open()) {
-		f >> moviefile;
-		strcat(moviefile, ".mvi");
-		f >> Sx;
-		f >> Sy;
-		f >> N;
+	string tmp;
+	if (f.is_open())
+	{
+		while (!f.eof())
+		{
+			f >> tmp;
+			JSON += tmp;
+		}
+		// for this command (string.pop_back()) 11th standard of c++ is needed
+		if (JSON[JSON.length() - 2] == '}' && JSON[JSON.length() - 1] == '}')
+			JSON.pop_back();
+		cout << JSON << endl;
+	} else {
+		JSON = "{}";
 	}
 
 	f.close();
 }
 
-void initSize()
+bool checkFileName(const char* regex_str, string toTest)
 {
-	strcpy(moviefile, "moviefile.mvi");
-	Sx = 320.0;
-	Sy = 320.0;
-	N = 51200;
+	regex_t regexCompiled;
+	bool result;
+	regmatch_t pmatch[1];
+
+	if (regcomp(&regexCompiled, regex_str, REG_EXTENDED))
+	{
+		cout << "\033[1;31mCould not create regex!\033[0m" << endl;
+		return false;
+	}
+
+	result = !regexec(&regexCompiled, toTest.c_str(), 1, pmatch, 0) ? ((pmatch[0].rm_so == 0) && (pmatch[0].rm_eo == toTest.length())) : false;
+	regfree(&regexCompiled);
+	return result;
+}
+
+int getToken(int start, int end, const char* token)
+{
+	int l2 = strlen(token);
+	for (int i = start; i < end; i++)
+	{
+		if (t[i].type == JSMN_STRING)
+		{
+			int l1 = t[i].end - t[i].start;
+			if (l1 == l2)
+			{
+				char* tmp = new char[l1];
+				strncpy(tmp, JSON.substr(t[i].start, l1).c_str(), l1);
+				if (strncmp(tmp, token, l1) == 0)
+				{
+					delete[] tmp;
+					return i;
+				}
+				delete[] tmp;
+			}
+		}
+	}
+	return -1;
+}
+
+void initData()
+{
+	//T es decimated_number kimaradt
+	jsmn_parser p;
+	int n, r, x, y, object_end;
+	size_t len, regex_len;
+	char* regex_str;
+
+	regex_len = 36;
+
+	len = (size_t) JSON.length();
+	jsmn_init(&p);
+	n = jsmn_parse(&p, JSON.c_str(), len, t, 0);
+	if (n < 0) {
+		cout << "\033[1;31mSome error occured!\033[0m" << endl;
+		return;
+	} else {
+		t = new jsmntok_t[n];
+	}
+	jsmn_init(&p);
+	r = jsmn_parse(&p, JSON.c_str(), len, t, n);
+
+	if (r < 1 && !t[0].type == JSMN_OBJECT) {
+		cout << "\033[1;31mJSON object not found!\033[0m" << endl;
+		return;
+	}
+	if ((x = getToken(1, r, "moviefile")) >= 0) {
+		regex_str = new char[regex_len];
+		strncpy(regex_str, "^[a-z0-9A-Z_]+$", (size_t) 15);
+		string toTest = JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start);
+		if (checkFileName(regex_str, toTest)) {
+			toTest += ".mvi";
+		}
+		regex_str[strlen(regex_str) - 1] = '\0';
+		strncat(regex_str, "(\\.mvi)$", (size_t) 7);
+		if (!checkFileName(regex_str, toTest)) {
+			strncpy(moviefile, "result.mvi", 11);
+		} else {
+			strncpy(moviefile, toTest.c_str(), toTest.length() + 1);
+		}
+		delete[] regex_str;
+	} else
+		strncpy(moviefile, "result.mvi", 10);
+	cout << "moviefile: " << moviefile << endl;
+
+	if ((x = getToken(1, r, "statfile")) >= 0) {
+		regex_str = new char[regex_len];
+		strncpy(regex_str, "^[a-z0-9A-Z_]+$", (size_t) 15);
+		string toTest = JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start);
+		if (checkFileName(regex_str, toTest)) {
+			toTest += ".txt";
+		}
+		regex_str[strlen(regex_str) - 1] = '\0';
+		strncat(regex_str, "(\\.txt)$", (size_t) 7);
+		if (!checkFileName(regex_str, toTest)) {
+			strncpy(statfile, "stat.txt", 9);
+		} else {
+			strncpy(statfile, toTest.c_str(), toTest.length() + 1);
+		}
+	} else
+			strncpy(statfile, "stat.txt", 8);
+	cout << "statfile: " << statfile << endl;
+	
+	if ((x = getToken(1, r, "pinning_lattice")) >= 0) {
+		if (t[x+1].type == JSMN_OBJECT) {
+			object_end = x + 1 + 2*t[x+1].size;
+			if ((y = getToken(x + 2, object_end, "pinning_lattice_Nx")) >= 0)
+				pinning_lattice_Nx = stoi(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				pinning_lattice_Nx = 10;
+
+			if ((y = getToken(x + 2, object_end, "pinning_lattice_Ny")) >= 0)
+				pinning_lattice_Ny = stoi(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				pinning_lattice_Ny = 10;
+
+			if ((y = getToken(x + 2, object_end, "pinning_lattice_ax")) >= 0)
+				pinning_lattice_ax = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				pinning_lattice_ax = 2.0;
+
+			if ((y = getToken(x + 2, object_end, "pinning_lattice_ay")) >= 0)
+				pinning_lattice_ay = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				pinning_lattice_ay = 2.0;
+		}
+	} else {
+		pinning_lattice_Nx = 10;
+		pinning_lattice_Ny = 10;
+		pinning_lattice_ax = 2.0;
+		pinning_lattice_ay = 2.0;
+	}
+	cout << "pinning_lattice_Nx: " << pinning_lattice_Nx << endl;
+	cout << "pinning_lattice_Ny: " << pinning_lattice_Ny << endl;
+	cout << "pinning_lattice_ax: " << pinning_lattice_ax << endl;
+	cout << "pinning_lattice_ay: " << pinning_lattice_ay << endl;
+
+	if ((x = getToken(1, r, "pinning_site")) >= 0) {
+		if (t[x+1].type == JSMN_OBJECT) {
+			object_end = x + 1 + 2*t[x+1].size;
+			if ((y = getToken(x + 2, object_end, "r_pinning_site")) >= 0)
+				r_pinning_site = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				r_pinning_site = 0.2;
+
+			if ((y = getToken(x + 2, object_end, "half_length_pinning_site")) >= 0)
+				half_length_pinning_site = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				half_length_pinning_site = 0.6;
+
+			if ((y = getToken(x + 2, object_end, "K_max_pinning_site")) >= 0)
+				K_max_pinning_site = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				K_max_pinning_site = 2.0;
+
+			if ((y = getToken(x + 2, object_end, "K_middle_pinning_site")) >= 0)
+				K_middle_pinning_site = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
+			else
+				K_middle_pinning_site = 0.15;
+		}
+	} else {
+		r_pinning_site = 0.2;
+		half_length_pinning_site = 0.6;
+		K_max_pinning_site = 2.0;
+		K_middle_pinning_site = 0.15;
+	}
+	cout << "r_pinning_site: " << r_pinning_site << endl;
+	cout << "half_length_pinning_site: " << half_length_pinning_site << endl;
+	cout << "K_max_pinning_site: " << K_max_pinning_site << endl;
+	cout << "K_middle_pinning_site: " << K_middle_pinning_site << endl;
+
+	if ((x = getToken(1, r, "T")) >= 0)
+		T = stod(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		T = 3.0;
+
+	if ((x = getToken(1, r, "decimate_number")) >= 0)
+		decimate_number = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		decimate_number = pinning_lattice_Nx * pinning_lattice_Ny / 4;
+
+	if ((x = getToken(1, r, "N_tabulate")) >= 0)
+		N_tabulate = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		N_tabulate = 50000;
+	
+	if ((x = getToken(1, r, "r0")) >= 0)
+		r0 = stod(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		r0 = 4.0;
+	
+	if ((x = getToken(1, r, "r_verlet")) >= 0)
+		r_verlet = stod(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		r_verlet = 6.0;
+	
+	if ((x = getToken(1, r, "dt")) >= 0)
+		dt = stod(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		dt = 0.002;
+	
+	if ((x = getToken(1, r, "total_time")) >= 0)
+		total_time = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		total_time = 100000;
+	
+	if ((x = getToken(1, r, "time_echo")) >= 0)
+		time_echo = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+	else
+		time_echo = 500;
+	cout << "T: " << T << endl;
+	cout << "decimate_number: " << decimate_number << endl;
+	cout << "N_tabulated: " << N_tabulate << endl;
+	cout << "r0: " << r0 << endl;
+	cout << "r_verlet: " << r_verlet << endl;
+	cout << "dt: " << dt << endl;
+	cout << "total_time: " << total_time << endl;
+	cout << "time_echo: " << time_echo << endl;
+	delete[] t;
 }
 
 void initParticles()
 {
-	N = N_pinning_sites;
+	N = N_pinning_sites - decimate_number;
 	ID = new int[N];
 
 	x = new double[N];
@@ -167,41 +425,26 @@ void initParticles()
 
     particle_is_near_to_vertex = new int[N];
 
-	N_tabulate = 50000;
 	tabulated_force = new double[N_tabulate];
 
-	r0 = 4.0;
-	r_verlet = 6.0;
 	r_travel_max = r_verlet - r0;
 
-	dt = 0.002;
 	current_time = 0;
-	total_time = 100000;
     multiplier = 0.0;
     max_multiplier = 1.0;
-    time_echo = 500;
 
 	rebuild_verlet_flag = 1;
 	x_so_far = new double[N];
 	y_so_far = new double[N];
+	pinning_ID = new int[N];
+	spin_flip = new int[N];
+	position_in_pinning_site = new int[N];
 	printf("Initialization complete\n");fflush(stdout);
 }
 
 void initArraysForPinningSites(int multiplier)
 {
 	int i;
-
-	r_pinning_site = 0.2;
-	half_length_pinning_site = 0.6;
-	K_max_pinning_site = 2.0;
-	K_middle_pinning_site = 0.15;
-	T = 3.0;
-
-	pinning_lattice_Nx = 30;
-	pinning_lattice_Ny = 30;
-	pinning_lattice_ax = 2.0;
-	pinning_lattice_ay = 2.0;
-
 	// calculating the system's size depending on the number of pinning sites
 	pin_length = 2 * (half_length_pinning_site + r_pinning_site);
 
@@ -211,6 +454,7 @@ void initArraysForPinningSites(int multiplier)
 		Sy = pinning_lattice_Ny * pinning_lattice_ay;
 		N_vertex = pinning_lattice_Nx * pinning_lattice_Ny;
 	    vertex_neighbor_number = 4;
+		min_z_type = 3;
 	} else 
 	if (multiplier == 6)
 	{
@@ -218,12 +462,15 @@ void initArraysForPinningSites(int multiplier)
 		Sy = pinning_lattice_Ny * pinning_lattice_ay * sqrt(3);
 		N_vertex = pinning_lattice_Nx * pinning_lattice_Ny * 4;
 	    vertex_neighbor_number = 3;
+		min_z_type = 2;
 	}
 	Sx_2 = Sx / 2;
 	Sy_2 = Sy / 2;
 
 	// calculating number of pinning sites in system
 	N_pinning_sites = pinning_lattice_Nx * pinning_lattice_Ny * multiplier;
+	N_vertex_z_type_3 = decimate_number * 2; 
+	N_vertex_z_type_4 = N_vertex - N_vertex_z_type_3;
 
 	particle_ID = new int[N_pinning_sites];
 
@@ -236,6 +483,7 @@ void initArraysForPinningSites(int multiplier)
 	verteces_id_near_pinning_site = new int*[N_pinning_sites];
 	for (i = 0; i < N_pinning_sites; i++)
 		verteces_id_near_pinning_site[i] = new int[2];
+	is_pinning_site_removed = new int[N_pinning_sites];
 
 	// init verteces array
 	x_vertex = new double[N_vertex];
@@ -245,6 +493,10 @@ void initArraysForPinningSites(int multiplier)
     vertex_z_type = new int[N_vertex];
 	vertex_neighbor_id = new int*[N_vertex];
     vertex_chess_color = new int[N_vertex];
+	vertex_q = new int[N_vertex];
+
+	vertex_type_number = 7 + 8;
+	vertex_average = new int[vertex_type_number];
 }
 
 void freeData()
@@ -260,6 +512,9 @@ void freeData()
 	delete[] q;
 	delete[] x_so_far;
 	delete[] y_so_far;
+	delete[] pinning_ID;
+	delete[] spin_flip;
+	delete[] position_in_pinning_site;
     delete[] particle_is_near_to_vertex;
 
 	delete[] x_pinning_site;
@@ -271,6 +526,7 @@ void freeData()
 	for (i = 0; i < N_pinning_sites; i++)
 		delete[] verteces_id_near_pinning_site[i];
 	delete[] verteces_id_near_pinning_site;
+	delete[] is_pinning_site_removed;
 
 	delete[] tabulated_force;
 
@@ -284,6 +540,9 @@ void freeData()
 		delete[] vertex_neighbor_id[i];
 	delete[] vertex_neighbor_id;
     delete[] vertex_chess_color;
+	delete[] vertex_q;
+
+	delete[] vertex_average;
 }
 
 void generateCoordinates()
@@ -347,51 +606,76 @@ void generateCoordinates()
 	printf("Generated coordinates for the particles\n");fflush(stdout);
 }
 
-void putParticleInPinningSite() 
+void zeros(int* array, int n)
 {
 	int i;
+	#pragma omp parallel for simd
+	for (i = 0; i < n; i++) array[i] = 0;
+}
+
+void zeros(double* array, int n)
+{
+	int i;
+	#pragma omp parallel for simd
+	for (i = 0; i < n; i++) array[i] = 0.0;
+}
+
+void putParticleInPinningSite() 
+{
+	int i, k;
+	k = 0;
 	for (i = 0; i < N_pinning_sites; i++)
 	{
-		particle_ID[i] = ID[i] = i;
-		
-		if (Rand() > 0.5) {
-			if (cos_fi[i] == 1.0) {
-				x[i] = x_pinning_site[i] - half_length_pinning_site;
-				y[i] = y_pinning_site[i];
-			} else {
-				if (cos_fi[i] == 0.0) {
-					x[i] = x_pinning_site[i];
-					y[i] = y_pinning_site[i] - half_length_pinning_site;
+		if (!is_pinning_site_removed[i])
+		{
+			particle_ID[i] = ID[k] = k;
+			pinning_ID[k] = i;
+			
+			if (Rand() > 0.5) {
+				if (cos_fi[i] == 1.0) {
+					x[k] = x_pinning_site[i] - half_length_pinning_site;
+					y[k] = y_pinning_site[i];
 				} else {
-					x[i] = x_pinning_site[i] - cos_fi[i] * half_length_pinning_site;
-					y[i] = y_pinning_site[i] - sin_fi[i] * half_length_pinning_site;
+					if (cos_fi[i] == 0.0) {
+						x[k] = x_pinning_site[i];
+						y[k] = y_pinning_site[i] - half_length_pinning_site;
+					} else {
+						x[k] = x_pinning_site[i] - cos_fi[i] * half_length_pinning_site;
+						y[k] = y_pinning_site[i] - sin_fi[i] * half_length_pinning_site;
+					}
 				}
-			}
-		} else {
-			if (cos_fi[i] == 1.0) {
-				x[i] = x_pinning_site[i] + half_length_pinning_site;
-				y[i] = y_pinning_site[i];
+				position_in_pinning_site[k] = -1;
 			} else {
-				if (cos_fi[i] == 0.0) {
-					x[i] = x_pinning_site[i];
-					y[i] = y_pinning_site[i] + half_length_pinning_site;
+				if (cos_fi[i] == 1.0) {
+					x[k] = x_pinning_site[i] + half_length_pinning_site;
+					y[k] = y_pinning_site[i];
 				} else {
-					x[i] = x_pinning_site[i] + cos_fi[i] * half_length_pinning_site;
-					y[i] = y_pinning_site[i] + sin_fi[i] * half_length_pinning_site;
+					if (cos_fi[i] == 0.0) {
+						x[k] = x_pinning_site[i];
+						y[k] = y_pinning_site[i] + half_length_pinning_site;
+					} else {
+						x[k] = x_pinning_site[i] + cos_fi[i] * half_length_pinning_site;
+						y[k] = y_pinning_site[i] + sin_fi[i] * half_length_pinning_site;
+					}
 				}
+				position_in_pinning_site[k] = 1;
 			}
+
+			color[k] = 1;
+			q[k] = 1.0;
+			k++;
 		}
-
-		color[i] = 1;
-		q[i] = 1.0;
-
-		// setting the initial forces
-		fx[i] = 0.0;
-		fy[i] = 0.0;
-		x_so_far[i] = 0.0;
-		y_so_far[i] = 0.0;
-        particle_is_near_to_vertex[i] = 0;
 	}
+	
+	// setting the initial forces
+	zeros(fx, N);
+	zeros(fy, N);
+	zeros(x_so_far, N);
+	zeros(y_so_far, N);
+	zeros(spin_flip, N);
+	zeros(particle_is_near_to_vertex, N);
+	printf("Particles placed in system");
+	fflush(stdout);
 }
 
 void initSquareVerteces()
@@ -413,7 +697,6 @@ void initSquareVerteces()
             // 3 - pinning site from left
 			x_vertex[k] = x;
 			y_vertex[k] = y;
-			vertex_type[k] = 0;
 			vertex_color[k] = 4;
             vertex_chess_color[k] = (i + j) % 2;
             vertex_z_type[k] = 4;
@@ -446,9 +729,9 @@ void initSquareVerteces()
 		y += pinning_lattice_ay;
 	}
 
-	for (i = 0; i < N_vertex; i++) {
-		cout << i << ": " << vertex_neighbor_id[i][0] << " " << vertex_neighbor_id[i][1] << " " << vertex_neighbor_id[i][2] <<" " << vertex_neighbor_id[i][3] << endl;
-	}
+	// for (i = 0; i < N_vertex; i++) {
+	// 	cout << i << ": " << vertex_neighbor_id[i][0] << " " << vertex_neighbor_id[i][1] << " " << vertex_neighbor_id[i][2] <<" " << vertex_neighbor_id[i][3] << endl;
+	// }
 	
 	printf("Init square verteces complet\n");
 	fflush(stdout);
@@ -472,13 +755,11 @@ void initHexaVerteces()
             // be kell tenni a chess color meghatarozasar es annak a meghatarozasat, hogy melyik pinning siteok vannak hozza kozel
 			x_vertex[k] = x;
 			y_vertex[k] = y;
-			vertex_type[k] = 0;
 			vertex_color[k++] = 4;
 
 			x += pinning_lattice_ax;
 			x_vertex[k] = x;
 			y_vertex[k] = y;
-			vertex_type[k] = 0;
 			vertex_color[k++] = 4;
 
 			x += pinning_lattice_ax / 2;
@@ -486,13 +767,11 @@ void initHexaVerteces()
 
 			x_vertex[k] = x;
 			y_vertex[k] = y;
-			vertex_type[k] = 0;
 			vertex_color[k++] = 4;
 
 			x += pinning_lattice_ax;
 			x_vertex[k] = x;
 			y_vertex[k] = y;
-			vertex_type[k] = 0;
 			vertex_color[k++] = 4;
 
 			x += pinning_lattice_ax / 2;
@@ -566,6 +845,7 @@ void initSquarePinningSites()
 			
 			verteces_id_near_pinning_site[k][0] = i * pinning_lattice_Nx + j;
 			verteces_id_near_pinning_site[k][1] = j == pinning_lattice_Nx - 1 ? i * pinning_lattice_Nx : i * pinning_lattice_Nx + j + 1;
+			is_pinning_site_removed[k] = 0;
 
 			sin_fi[k] = 0.0;
 			cos_fi[k++] = 1.0;
@@ -586,6 +866,7 @@ void initSquarePinningSites()
 					verteces_id_near_pinning_site[k][1] = (i + 1) * pinning_lattice_Nx;
 				else
 					verteces_id_near_pinning_site[k][1] = (i + 1) * pinning_lattice_Nx + j + 1;
+			is_pinning_site_removed[k] = 0;
 
 			sin_fi[k] = 1.0;
 			cos_fi[k++] = 0.0;
@@ -611,6 +892,8 @@ void initHexaPinningSites()
 	y = pinning_lattice_ax * sqrt3 / 2;
 	k = 0;
 
+	// meg kell hatarozni a szomszedis vertex id-kat
+
 	for (i = 0; i < pinning_lattice_Nx; i++)
 	{
 		x = pinning_lattice_ax / 2;
@@ -618,6 +901,8 @@ void initHexaPinningSites()
 		{
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
+
+			is_pinning_site_removed[k] = 0;
 
 			sin_fi[k] = 0.0;
 			cos_fi[k++] = 1.0;
@@ -628,6 +913,8 @@ void initHexaPinningSites()
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
 
+			is_pinning_site_removed[k] = 0;
+
 			sin_fi[k] = sin(PI / 3);
 			cos_fi[k++] = cos(PI / 3);
 
@@ -635,6 +922,8 @@ void initHexaPinningSites()
 
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
+
+			is_pinning_site_removed[k] = 0;
 
 			sin_fi[k] = sin(-PI / 3);
 			cos_fi[k++] = cos(-PI / 3);
@@ -645,6 +934,8 @@ void initHexaPinningSites()
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
 
+			is_pinning_site_removed[k] = 0;
+
 			sin_fi[k] = 0.0;
 			cos_fi[k++] = 1.0;
 
@@ -654,6 +945,8 @@ void initHexaPinningSites()
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
 
+			is_pinning_site_removed[k] = 0;
+
 			sin_fi[k] = sin(PI / 3);
 			cos_fi[k++] = cos(PI / 3);
 
@@ -662,6 +955,8 @@ void initHexaPinningSites()
 			x_pinning_site[k] = x;
 			y_pinning_site[k] = y;
 
+			is_pinning_site_removed[k] = 0;
+
 			sin_fi[k] = sin(-PI / 3);
 			cos_fi[k++] = cos(-PI / 3);
 
@@ -669,6 +964,55 @@ void initHexaPinningSites()
 			y -= pinning_lattice_ax  * sqrt3 / 4;
 		}
 		y += pinning_lattice_ay * sqrt3;
+	}
+}
+
+void removePinningSiteFromVertexNeighborhood(int vertexID, int removeID)
+{
+	int i;
+	for (i = 0; i < vertex_neighbor_number; i++) {
+		if (vertex_neighbor_id[vertexID][i] == removeID)
+		{
+			vertex_neighbor_id[vertexID][i] = -1;
+			break;
+		}
+	}
+}
+
+void removePinningsite(int index, int vertex1, int vertex2)
+{
+	is_pinning_site_removed[index] = 1;
+	vertex_z_type[vertex1] --;
+	vertex_z_type[vertex2] --;
+	
+	removePinningSiteFromVertexNeighborhood(vertex1, index);
+	removePinningSiteFromVertexNeighborhood(vertex2, index);
+}
+
+void decimating()
+{
+	int i, index, id1, id2;
+	for (i = 0; i < decimate_number; i++)
+	{
+		do {
+			index = (int) (Rand() * N_pinning_sites) % N_pinning_sites;
+			id1 = verteces_id_near_pinning_site[index][0];
+			id2 = verteces_id_near_pinning_site[index][1];
+		} while (vertex_z_type[id1] <= min_z_type || vertex_z_type[id2] <= min_z_type);
+		removePinningsite(index, id1, id2);
+	}
+	printf("Decimation complete!\n"); fflush(stdout);
+}
+
+void calculateTopologicalChargeOnVertex()
+{
+	int i;
+	#pragma omp parallel for simd
+	for (i = 0; i < N_vertex; i++)
+	{
+		if (vertex_z_type[i] == 3 && vertex_type[i] == 4) 
+			cout << "\033[1;31mError! A vertex with Z type 3 has type 4!\033[0m" << endl;
+		vertex_q[i] = (-1) * vertex_z_type[i] + 2 * vertex_type[i];
 	}
 }
 
@@ -707,28 +1051,32 @@ void calculateVertexType()
 		vertex_type[i] = 0;
 		for (j = 0; j < vertex_neighbor_number; j++)
 		{
-			particle_id = particle_ID[vertex_neighbor_id[i][j]];
-			// calculating the particles distance, from the vertex
-			diffX = x[particle_id] - x_vertex[i];
-			diffY = y[particle_id] - y_vertex[i];
+			if (vertex_neighbor_id[i][j] != -1) {
+				particle_id = particle_ID[vertex_neighbor_id[i][j]];
+				// calculating the particles distance, from the vertex
+				diffX = x[particle_id] - x_vertex[i];
+				diffY = y[particle_id] - y_vertex[i];
 
-			if (diffX < -Sx_2) diffX += Sx;
-			if (diffX > Sx_2) diffX -= Sx;
-			if (diffY < -Sy_2) diffY += Sy;
-			if (diffY > Sy_2) diffY -= Sy;
+				if (diffX < -Sx_2) diffX += Sx;
+				if (diffX > Sx_2) diffX -= Sx;
+				if (diffY < -Sy_2) diffY += Sy;
+				if (diffY > Sy_2) diffY -= Sy;
 
-            x_rotated = diffX * cos_fi[particle_id] + diffY * sin_fi[particle_id];
-		    y_rotated = -diffX * sin_fi[particle_id] + diffY * cos_fi[particle_id];
+				x_rotated = diffX * cos_fi[particle_id] + diffY * sin_fi[particle_id];
+				y_rotated = -diffX * sin_fi[particle_id] + diffY * cos_fi[particle_id];
 
-			// it won't work well if pinning_lattice_az is different from pinning_lattice_ay
-            // if the particle is closer than the half of the pinning length, then:
-			if (x_rotated * x_rotated + y_rotated * y_rotated <= pinning_lattice_ax * pinning_lattice_ax / 4.0)
-            {
-				vertex_type[i] ++;
-                particle_is_near_to_vertex[particle_id] = 1;
-            } else {
-                particle_is_near_to_vertex[particle_id] = 0;
-            }
+				// it won't work well if pinning_lattice_az is different from pinning_lattice_ay
+				// if the particle is closer than the half of the pinning length, then:
+				if (x_rotated * x_rotated + y_rotated * y_rotated <= pinning_lattice_ax * pinning_lattice_ax / 4.0)
+				{
+					vertex_type[i] ++;
+					particle_is_near_to_vertex[particle_id] = 1;
+				} else {
+					particle_is_near_to_vertex[particle_id] = 0;
+				}
+			} else {
+				particle_is_near_to_vertex[particle_id] = 0;
+			}
 		}
         if (vertex_type[i] == 2) calculateGroundState(i);
 		vertex_color[i] = 2 + vertex_type[i];
@@ -903,15 +1251,16 @@ void calculatePinningSitesForce()
 
 void calculateModifiedPinningiteForces()
 {
-	int i, j;
-	double diffX, diffY, distance;
-	double x_rotated, y_rotated;
-	double fx_rotated, fy_rotated;
-	double f;
+	int j;
 
-	for (i = 0; i < N_pinning_sites; i++)
+	#pragma omp parallel for simd
+	for (j = 0; j < N; j++)
 	{
-		j = particle_ID[i];
+		int i;
+		double diffX, diffY;
+		double x_rotated, y_rotated;
+		double fx_rotated, fy_rotated;
+		i = pinning_ID[j];
 
 		diffX = x[j] - x_pinning_site[i];
 		diffY = y[j] - y_pinning_site[i];
@@ -921,17 +1270,25 @@ void calculateModifiedPinningiteForces()
 		if (diffY < -Sy_2) diffY += Sy;
 		if (diffY > Sy_2) diffY -= Sy;
 
-		x_rotated = diffX * cos_fi[i] - diffY * sin_fi[i];
-		y_rotated = diffX * sin_fi[i] + diffY * cos_fi[i];
+		x_rotated = diffX * cos_fi[i] + diffY * sin_fi[i];
+		y_rotated = -diffX * sin_fi[i] + diffY * cos_fi[i];
 
 		if (x_rotated <= -half_length_pinning_site) 
 		{
+			if (position_in_pinning_site[j] != -1) {
+				position_in_pinning_site[j] = -1;
+				spin_flip[j] ++;
+			}
 			x_rotated = x_rotated + half_length_pinning_site;
 			fx_rotated = -K_max_pinning_site * x_rotated;
 			fy_rotated = -K_max_pinning_site * y_rotated;
 		} else 
 			if (x_rotated >= half_length_pinning_site) 
 			{
+				if (position_in_pinning_site[j] != 1) {
+					position_in_pinning_site[j] = 1;
+					spin_flip[j] ++;
+				}
 				x_rotated = x_rotated - half_length_pinning_site;
 				fx_rotated = -K_max_pinning_site * x_rotated;
 				fy_rotated = -K_max_pinning_site * y_rotated;
@@ -941,8 +1298,8 @@ void calculateModifiedPinningiteForces()
 				fy_rotated = -K_max_pinning_site * y_rotated;
 			}
 
-		fx[j] += fx_rotated * cos_fi[i] + fy_rotated * sin_fi[i];
-		fy[j] += -fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
+		fx[j] += fx_rotated * cos_fi[i] - fy_rotated * sin_fi[i];
+		fy[j] += fx_rotated * sin_fi[i] + fy_rotated * cos_fi[i];
 		
 		// circle shaped
 		//fx[j] += -K_max_pinning_site * diffX;
@@ -976,10 +1333,10 @@ void moveParticles()
 		if (rebuild_verlet_flag == 0)
 			if (x_so_far[i] * x_so_far[i] + y_so_far[i] * y_so_far[i] >= r_travel_max * r_travel_max)
 				rebuild_verlet_flag = 1;
-
-		fx[i] = 0.0;
-		fy[i] = 0.0;
 	}
+
+	zeros(fx, N);
+	zeros(fy, N);
 }
 
 void writeToFile(char* filename)
@@ -1012,7 +1369,7 @@ void writeContourFile()
     int i, j;
 	
 	sqrt3 = sqrt(3);
-	f << N_pinning_sites * 3 << endl;
+	f << (N_pinning_sites - decimate_number) * 3 << endl;
 
     // for(j = 0; j < vertex_neighbor_number; j++)
 	// {
@@ -1079,63 +1436,66 @@ void writeContourFile()
 
 	for(i = 0; i < N_pinning_sites; i++)
 	{
-		f << x_pinning_site[i] << endl;
-		f << y_pinning_site[i] << endl;
-		f << r_pinning_site << endl;
-		f << r_pinning_site << endl;
-		f << r_pinning_site << endl;
-
-		if (cos_fi[i] == 1)
+		if (!is_pinning_site_removed[i])
 		{
-			f << x_pinning_site[i] + half_length_pinning_site << endl;
+			f << x_pinning_site[i] << endl;
 			f << y_pinning_site[i] << endl;
 			f << r_pinning_site << endl;
 			f << r_pinning_site << endl;
 			f << r_pinning_site << endl;
 
-			f << x_pinning_site[i] - half_length_pinning_site << endl;
-			f << y_pinning_site[i] << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-		} else 
-		if (cos_fi[i] == cos(PI / 3) && sin_fi[i] == sin(PI / 3)) {
-			f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
-			f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
+			if (cos_fi[i] == 1)
+			{
+				f << x_pinning_site[i] + half_length_pinning_site << endl;
+				f << y_pinning_site[i] << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
 
-			f << x_pinning_site[i] - half_length_pinning_site / 2 << endl;
-			f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-		} else 
-		if (cos_fi[i] == 0) {
-			f << x_pinning_site[i] << endl;
-			f << y_pinning_site[i] + half_length_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
+				f << x_pinning_site[i] - half_length_pinning_site << endl;
+				f << y_pinning_site[i] << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+			} else 
+			if (cos_fi[i] == cos(PI / 3) && sin_fi[i] == sin(PI / 3)) {
+				f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+				f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
 
-			f << x_pinning_site[i] << endl;
-			f << y_pinning_site[i] - half_length_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-		} else {
-			f << x_pinning_site[i] - half_length_pinning_site / 2<< endl;
-			f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
+				f << x_pinning_site[i] - half_length_pinning_site / 2 << endl;
+				f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+			} else 
+			if (cos_fi[i] == 0) {
+				f << x_pinning_site[i] << endl;
+				f << y_pinning_site[i] + half_length_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
 
-			f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
-			f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
-			f << r_pinning_site << endl;
+				f << x_pinning_site[i] << endl;
+				f << y_pinning_site[i] - half_length_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+			} else {
+				f << x_pinning_site[i] - half_length_pinning_site / 2<< endl;
+				f << y_pinning_site[i] + half_length_pinning_site * sqrt3 / 2 << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+
+				f << x_pinning_site[i] + half_length_pinning_site / 2 << endl;
+				f << y_pinning_site[i] - half_length_pinning_site * sqrt3 / 2 << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+				f << r_pinning_site << endl;
+			}
 		}
 	}
 	f.close();
@@ -1198,9 +1558,131 @@ void writeGfile()
 	f.close();
 }
 
+void zerosStatistics()
+{
+	zeros(vertex_average, vertex_type_number);
+	charge_3_near_3 = 0;
+	charge_3_near_4 = 0;
+	charge_4_near_3 = 0;
+	charge_4_near_4 = 0;
+	N_z3_charged = 0;
+	N_z4_charged = 0;
+	stat_steps = 0;
+	zeros(spin_flip, N);
+}
+
+void calculateStatisticsPerStep()
+{
+	int i, j, add;
+	int actual_z_type, neighbor_z_type;
+	int q, id;
+	#pragma omp parallel for simd
+	for (i = 0; i < N_vertex; i++)
+	{
+		if (vertex_z_type[i] == 3)
+			add = 7;
+		else
+			add = 0;
+
+		vertex_average[add + vertex_type[i]] ++;
+	}
+
+	for (i = 0; i < N_vertex; i++)
+	{
+		actual_z_type = vertex_z_type[i];
+		if (vertex_q[i])
+			if (vertex_z_type[i] == 3)
+				N_z3_charged ++;
+			else
+				N_z4_charged ++;
+
+		for (j = 0; j < vertex_neighbor_number; j++)
+		{
+			if (vertex_neighbor_id[i][j] != -1)
+			{
+				id = vertex_neighbor_id[i][j];
+				neighbor_z_type = vertex_z_type[id];
+				q = vertex_q[id];
+
+				if (actual_z_type == 3)
+					if (neighbor_z_type == 3)
+						charge_3_near_3 += q;
+					else
+						charge_3_near_4 += q;
+				else
+					if (neighbor_z_type == 3)
+						charge_4_near_3 += q;
+					else
+						charge_4_near_4 += q;
+			}
+		}
+	}
+	stat_steps ++;
+}
+
 void writeStatistics()
 {
+	int i;
+	int charge_type_z4[5];
+	int charge_type_z3[5];
+	int total_charge_on_z3 = 0;
+	int total_charge_on_z4 = 0;
+	int total_flips = 0;
+	ofstream stat(statfile, ios_base::app);
+	stat << current_time << " ";
+	for (i = 0; i < 7; i++)
+		stat << (double) vertex_average[i] / (double) stat_steps / (double) N_vertex_z_type_4 << " ";
+	for (i = 7; i < vertex_type_number; i++)
+		stat << (double) vertex_average[i] / (double) stat_steps / (double) N_vertex_z_type_3 << " ";
 
+	charge_type_z4[0] = vertex_average[2] + vertex_average[5] + vertex_average[6]; // q = 0;
+	charge_type_z4[1] = vertex_average[1];	// q = -2;
+	charge_type_z4[2] = vertex_average[3];	// q = +2;
+	charge_type_z4[3] = vertex_average[0];	// q = -4;
+	charge_type_z4[4] = vertex_average[4];	// q = +4;
+
+	charge_type_z3[0] = vertex_average[9] + vertex_average[12] + vertex_average[13]; // q = +1;
+	charge_type_z3[1] = vertex_average[8];	// q = -1;
+	charge_type_z3[2] = vertex_average[10];	// q = +3;
+	charge_type_z3[3] = vertex_average[7];	// q = -3;
+	charge_type_z3[4] = vertex_average[11];	// 0. can't happen
+
+	for (i = 0; i < 5; i++)
+		stat << (double) charge_type_z4[i] / (double) stat_steps / (double) N_vertex_z_type_4 << " ";
+	for (i = 0; i < 5; i++)
+		stat << (double) charge_type_z3[i] / (double) stat_steps / (double) N_vertex_z_type_3 << " ";
+
+	total_charge_on_z4 = charge_type_z4[1] * (-2) + charge_type_z4[2] * 2 
+					   + charge_type_z4[3] * (-4) + charge_type_z4[4] * 4;
+	total_charge_on_z3 = charge_type_z3[0] - charge_type_z3[1]
+					   + charge_type_z3[2] * (-3) + charge_type_z3[3] * 3;
+	stat << (double) total_charge_on_z4 / (double) stat_steps / (double) N_vertex_z_type_4 << " ";
+	stat << (double) total_charge_on_z3 / (double) stat_steps / (double) N_vertex_z_type_3 << " ";
+
+	stat << (double) N_z4_charged / (double) stat_steps / (double) N_vertex_z_type_4 << " ";
+	stat << (double) N_z3_charged / (double) stat_steps / (double) N_vertex_z_type_3 << " ";
+
+	if (N_z3_charged)
+	{
+		stat << (double) charge_3_near_3 / (double) N_z3_charged / 3.0 << " ";
+		stat << (double) charge_4_near_3 / (double) N_z3_charged / 3.0 << " ";
+	} else {
+		stat << "0 0 ";
+	}
+
+	if (N_z4_charged)
+	{
+		stat << (double) charge_3_near_4 / (double) N_z4_charged / 4.0 << " ";
+		stat << (double) charge_4_near_4 / (double) N_z4_charged / 4.0 << " ";
+	} else {
+		stat << "0 0 ";
+	}
+
+	for (i = 0; i < N; i++)
+		total_flips += spin_flip[i];
+	stat << (double) total_flips / (double) stat_steps << endl;
+	zerosStatistics();
+	stat.close();
 }
 
 int main(int argc, char* argv[]) 
@@ -1210,23 +1692,29 @@ int main(int argc, char* argv[])
 
 	FILE* f;
 	moviefile = new char[30];
+	statfile = new char[30];
 	if (argc == 2) 
 		readDataFromFile(argv[1]);
-	else
-		initSize();
+	initData();
+	// erasing stat file
+	ofstream stat(statfile);
+	stat << "";
+	stat.close();
 
 	f = fopen(moviefile, "wb");
 
 	initSquarePinningSites();
 	initSquareVerteces();
+	zeros(vertex_type, N_vertex);
+	zeros(vertex_q, N_vertex);
+	zerosStatistics();
+	decimating();
 	initParticles();
 	writeGfile();
-	cout << "Sx = " << Sx << endl;
-	cout << "Sy = " << Sy << endl;
-	cout << "N = " << N << endl;
-	cout << "moviefile: " << moviefile << endl;
+	cout << "Sx: " << Sx << endl;
+	cout << "Sy: " << Sy << endl;
+	cout << "N: " << N << endl;
 
-	// generateCoordinates();
 	putParticleInPinningSite();
 	writeContourFile();
 	calculateTabulatedForces();
@@ -1243,19 +1731,19 @@ int main(int argc, char* argv[])
 		if (rebuild_verlet_flag == 1) 
 		{
 			calculateVerletList();
-			// colorVerlet();
 		}
 
 		calculatePairwiseForces();
-		// calculateExternalForces();
 		calculateThermalForce();
 		calculateModifiedPinningiteForces();
-
 		moveParticles();
+
+		calculateStatisticsPerStep();
 
 		if (current_time % 100 == 0)
         {
             calculateVertexType();
+			calculateTopologicalChargeOnVertex();
 			writeCmovie(f, current_time);
             multiplier = (double) current_time / (double) total_time * max_multiplier;
             writeStatistics();

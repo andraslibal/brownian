@@ -524,7 +524,7 @@ int main(int argc, char* argv[])
         if (rebuild_verlet_flag == 1) 
         {
             calculateVerletList();
-            colorVerlet();
+            // colorVerlet();
         }
 
         calculateForces();
