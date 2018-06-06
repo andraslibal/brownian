@@ -295,8 +295,8 @@ void initParticles() {
     Coordinate position;
 
     while (i < N_particles) {
-        particles[i].id = i;
-        particles[i].color = ((rand() / (RAND_MAX + 1.0)) > 0.5); //color
+        particles[i].id = (u_short) i;
+        particles[i].color = (u_char)((rand() / (RAND_MAX + 1.0)) > 0.5); //color
         particles[i].q = particles[i].color ? -1.0 : 1.0;
         stowParticle(&position, i);  //particle coordinate
         particles[i].coord.x = position.x;
@@ -1059,12 +1059,12 @@ void write_cluster_stat() {
     ///time, cluster_type, cluster_type_avg, nrofcluster,bigcluster,smallcluster,avgCluster
     fprintf(statistics_file,"%d ", t);
     for (int i = 0; i < sumVertexTypes; i++)
-        fprintf(statistics_file,"%.2lf  ",  (double)(vertexTypes[i] % N_average));
+        fprintf(statistics_file,"%.2lf  ",  (double)(vertexTypes[i] /(double) N_average));
 
 
-    fprintf(statistics_file, " %.2lf", (double) (avgNCluster % N_average));
-    fprintf(statistics_file, " %d", avgBigCluster % N_average);
-    fprintf(statistics_file, " %d", avgSmallCluster % N_average);
+    fprintf(statistics_file, " %.2lf", (double) (avgNCluster /(double) N_average));
+    fprintf(statistics_file, " %.2lf", avgBigCluster /(double) N_average);
+    fprintf(statistics_file, " %.2lf", avgSmallCluster /(double) N_average);
     fprintf(statistics_file, " %.2lf\n", avgAvgCluster / (double)N_average);
 }
 
@@ -1161,7 +1161,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(10, 10, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(100, 100, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -1170,7 +1170,7 @@ void allInit() {
     initPinningSites();
     write_contour_file();
 
-    write_gfile();
+    //write_gfile();
 
     // initParticles();
     //initSquareParticles();
@@ -1194,7 +1194,8 @@ void simulation(int time, int statisticTime) {
         moveParticles();
         //if (flag_to_rebuild_verlet) buildVerletList();
 
-        if (t % 100 == 0) {
+        ///itt allitani a moovie file-nak
+        if (t % 3000 == 0) {
             calculateVertexTypes();
             calculateClusters();
             calculateVertexStatistics();
@@ -1218,6 +1219,7 @@ int main(int argc, char *argv[]) {
     char statfile[100] = {0};
     char *be= (char *) malloc(100);
     uint64_t seed = 0;
+    int lepes=0;
 
     ///result, statistic,
     if (argc > 1) {
@@ -1229,6 +1231,7 @@ int main(int argc, char *argv[]) {
         strncpy(statfile, properFilename(be) ? strcat(be, ".txt") : "statistics.txt",
                 sizeof(statfile));
         seed = (uint64_t)argv[3];
+        lepes = atoi(argv[4]);
     } else {
         strncpy(filename, "result.mvi", sizeof(filename));
         strncpy(statfile, "statistics.txt", sizeof(statfile));
@@ -1250,8 +1253,8 @@ int main(int argc, char *argv[]) {
 
     start();
 
-    N_average = 300;
-    simulation(100000, N_average);
+    N_average = 100;
+    simulation(lepes, N_average);
     calculateClusters();
     //write_cluster_statistics();
 
