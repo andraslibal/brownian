@@ -4,16 +4,16 @@
 #include "particle.h"
 
 
-struct Pinning{
+struct Pinning {
     u_short id;             //id of a pinning
-    Coordinate coord;   //x,y coordinate
-    double r;           //kor sugara
-    double fMax;       //
-    u_short particlesId; //melyik reszecske tartozik hozza, max 1
+    Coordinate coord;       //x,y coordinate
+    double r;               //kor sugara
+    double fMax;
+    u_short particlesId;   //melyik reszecske tartozik hozza, max 1
 
-    double lx,ly;       //koztes resz hossza,szelessege
-    double sinfi,cosfi; //mennyire van megdolve
-    double middleHeight;//godrok kozti magassag
+    double lx, ly;         //koztes resz hossza,szelessege
+    double sinfi, cosfi;   //mennyire van megdolve
+    double middleHeight;   //melyedesek kozti magassag
 };
 
 typedef struct Pinning Pinning;

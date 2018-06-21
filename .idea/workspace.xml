@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/main.c" line="1201" />
+    <bookmark url="file://$PROJECT_DIR$/main.c" line="1082" />
   </component>
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="true">
     <generated>
@@ -16,10 +16,28 @@
   <component name="ChangeListManager">
     <list default="true" id="10a6417d-4f29-451c-921a-2894db5ae907" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bro.mvi" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/brownian" beforeDir="false" afterPath="$PROJECT_DIR$/brownian" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/brownian60" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brownian602" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/contour.txt" beforeDir="false" afterPath="$PROJECT_DIR$/contour.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data.h" beforeDir="false" afterPath="$PROJECT_DIR$/data.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/do" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gfile" beforeDir="false" afterPath="$PROJECT_DIR$/gfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfile60" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvi.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/particle.h" beforeDir="false" afterPath="$PROJECT_DIR$/particle.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pinning.h" beforeDir="false" afterPath="$PROJECT_DIR$/pinning.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/res60.mvi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resrand20.mvi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result.mvi" beforeDir="false" afterPath="$PROJECT_DIR$/result.mvi" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/result20magnetic.mvi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result2cluster.mvi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/sat60.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/statistics.txt" beforeDir="false" afterPath="$PROJECT_DIR$/statistics.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vertex.h" beforeDir="false" afterPath="$PROJECT_DIR$/vertex.h" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <ignored path="$PROJECT_DIR$/CMakeFiles/" />
@@ -45,8 +63,8 @@
       <file leaf-file-name="main.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2070">
-              <caret line="548" column="13" lean-forward="true" selection-start-line="548" selection-start-column="13" selection-end-line="548" selection-end-column="13" />
+            <state relative-caret-position="654">
+              <caret line="1133" column="4" selection-start-line="1133" selection-start-column="4" selection-end-line="1133" selection-end-column="4" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
                 <element signature="e#214#328#0" />
@@ -73,11 +91,15 @@
                 <element signature="e#14302#14919#0" />
                 <element signature="e#14921#15761#0" />
                 <element signature="e#15763#17611#0" />
-                <element signature="e#19544#19947#0" />
+                <element signature="e#17613#17960#0" />
+                <element signature="e#17962#19542#0" />
+                <element signature="e#16310#16713#0" />
                 <element signature="e#19949#21351#0" />
                 <element signature="e#21353#21497#0" />
                 <element signature="e#21499#23139#0" />
+                <element signature="e#19639#19698#0" />
                 <element signature="e#23141#24199#0" />
+                <element signature="e#24201#28634#0" />
                 <element signature="e#28636#28766#0" />
                 <element signature="e#28768#30146#0" />
                 <element signature="e#30148#31021#0" />
@@ -92,6 +114,8 @@
                 <element signature="e#38289#38793#0" />
                 <element signature="e#38795#39195#0" />
                 <element signature="e#39197#40194#0" />
+                <element signature="e#40196#40804#0" />
+                <element signature="e#40806#41674#0" />
               </folding>
             </state>
           </provider>
@@ -100,8 +124,8 @@
       <file leaf-file-name="vertex.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/vertex.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="340">
-              <caret line="17" column="29" selection-start-line="17" selection-start-column="29" selection-end-line="17" selection-end-column="29" />
+            <state relative-caret-position="40">
+              <caret line="2" column="2" selection-start-line="2" selection-start-column="2" selection-end-line="2" selection-end-column="2" />
             </state>
           </provider>
         </entry>
@@ -109,8 +133,8 @@
       <file leaf-file-name="data.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/data.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1380">
-              <caret line="69" selection-start-line="69" selection-end-line="69" />
+            <state relative-caret-position="420">
+              <caret line="21" column="19" selection-start-line="21" selection-start-column="19" selection-end-line="21" selection-end-column="19" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -121,8 +145,8 @@
       <file leaf-file-name="particle.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/particle.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="15" column="5" selection-start-line="15" selection-start-column="5" selection-end-line="15" selection-end-column="5" />
+            <state relative-caret-position="280">
+              <caret line="14" column="28" selection-start-line="14" selection-start-column="28" selection-end-line="14" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -130,8 +154,8 @@
       <file leaf-file-name="pinning.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/pinning.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="140">
-              <caret line="7" column="12" selection-start-line="7" selection-start-column="12" selection-end-line="7" selection-end-column="12" />
+            <state relative-caret-position="300">
+              <caret line="15" column="39" selection-start-line="15" selection-start-column="39" selection-end-line="15" selection-end-column="39" />
             </state>
           </provider>
         </entry>
@@ -166,6 +190,8 @@
       <find>calc</find>
       <find>print</find>
       <find>multiply</find>
+      <find>morton</find>
+      <find>printParticle</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -181,11 +207,11 @@
         <option value="$PROJECT_DIR$/cmake-build-debug/particle.h" />
         <option value="$PROJECT_DIR$/random_numrec.h" />
         <option value="$PROJECT_DIR$/random_numrec.c" />
-        <option value="$PROJECT_DIR$/vertex.h" />
-        <option value="$PROJECT_DIR$/pinning.h" />
-        <option value="$PROJECT_DIR$/particle.h" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/data.h" />
+        <option value="$PROJECT_DIR$/pinning.h" />
+        <option value="$PROJECT_DIR$/vertex.h" />
+        <option value="$PROJECT_DIR$/particle.h" />
         <option value="$PROJECT_DIR$/main.c" />
       </list>
     </option>
@@ -315,12 +341,12 @@
       <workItem from="1528299102605" duration="2221000" />
       <workItem from="1528572174456" duration="5383000" />
       <workItem from="1529005440463" duration="751000" />
-      <workItem from="1529583191935" duration="1359000" />
+      <workItem from="1529583191935" duration="4055000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="259052000" />
+    <option name="totallyTimeSpent" value="261748000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="64" y="-11" width="1857" height="1092" extended-state="6" />
@@ -330,6 +356,7 @@
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="CMake" order="7" weight="0.32947367" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5014028" side_tool="true" weight="0.33781764" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32786885" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.3038168" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -343,7 +370,6 @@
       <window_info anchor="bottom" id="Messages" order="7" sideWeight="0.4985972" visible="true" weight="0.31988043" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32884902" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -357,7 +383,7 @@
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="67" />
+      <option name="time" value="82" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="CMakeRunConfiguration">
@@ -593,20 +619,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pinning.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
-          <caret line="7" column="12" selection-start-line="7" selection-start-column="12" selection-end-line="7" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vertex.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="17" column="29" selection-start-line="17" selection-start-column="29" selection-end-line="17" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="280">
@@ -621,10 +633,24 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/pinning.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="15" column="39" selection-start-line="15" selection-start-column="39" selection-end-line="15" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vertex.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="40">
+          <caret line="2" column="2" selection-start-line="2" selection-start-column="2" selection-end-line="2" selection-end-column="2" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/data.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1380">
-          <caret line="69" selection-start-line="69" selection-end-line="69" />
+        <state relative-caret-position="420">
+          <caret line="21" column="19" selection-start-line="21" selection-start-column="19" selection-end-line="21" selection-end-column="19" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
@@ -633,15 +659,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/particle.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="15" column="5" selection-start-line="15" selection-start-column="5" selection-end-line="15" selection-end-column="5" />
+        <state relative-caret-position="280">
+          <caret line="14" column="28" selection-start-line="14" selection-start-column="28" selection-end-line="14" selection-end-column="28" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2070">
-          <caret line="548" column="13" lean-forward="true" selection-start-line="548" selection-start-column="13" selection-end-line="548" selection-end-column="13" />
+        <state relative-caret-position="654">
+          <caret line="1133" column="4" selection-start-line="1133" selection-start-column="4" selection-end-line="1133" selection-end-column="4" />
           <folding>
             <element signature="e#0#17#0" expanded="true" />
             <element signature="e#214#328#0" />
@@ -668,11 +694,15 @@
             <element signature="e#14302#14919#0" />
             <element signature="e#14921#15761#0" />
             <element signature="e#15763#17611#0" />
-            <element signature="e#19544#19947#0" />
+            <element signature="e#17613#17960#0" />
+            <element signature="e#17962#19542#0" />
+            <element signature="e#16310#16713#0" />
             <element signature="e#19949#21351#0" />
             <element signature="e#21353#21497#0" />
             <element signature="e#21499#23139#0" />
+            <element signature="e#19639#19698#0" />
             <element signature="e#23141#24199#0" />
+            <element signature="e#24201#28634#0" />
             <element signature="e#28636#28766#0" />
             <element signature="e#28768#30146#0" />
             <element signature="e#30148#31021#0" />
@@ -687,6 +717,8 @@
             <element signature="e#38289#38793#0" />
             <element signature="e#38795#39195#0" />
             <element signature="e#39197#40194#0" />
+            <element signature="e#40196#40804#0" />
+            <element signature="e#40806#41674#0" />
           </folding>
         </state>
       </provider>

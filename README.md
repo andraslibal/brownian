@@ -12,3 +12,7 @@ Movie output: creating a movie file with all x,y positions written out in each f
 Statistics output: output the average speed of movement avg(qfx) to a statistics file
 avergaed over all particles and averaged over the time steps the average considers (ex.1000)  
 ++
+
+
+run: cmake . && make
+     ./brownian

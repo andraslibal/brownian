@@ -21,9 +21,6 @@ double temperature;     //homerseklet a reszecske mozgatashoz
 double multiply;        //szorzo az pairwais ero novelesere.
 double maxMultiply;
 
-int mortonGrid[128][128];
-int mortonId[128];
-
 ///Pinning
 int N_pinning;              //number of pinnings
 Pinning *pinnings;
