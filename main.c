@@ -1161,7 +1161,7 @@ int properFilename(char *filename) {
 void allInit() {
 
     ///init Pinningnek:Nx,Ny,distX,distY,lx2,ly2,r,fmax,middleHeight
-    initPinning(100, 100, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
+    initPinning(60, 60, 2.0, 2.0, 0.6, 0.2, 0.2, 2.0, 0.15);
 
     ///General init: nr Particles, nr Verlet list, nr tabulate force, nr Vertex
     ///init Particle: N_particles, sX+sY, dt, r, rv, temperature, multiply, maxmultiply
@@ -1195,7 +1195,7 @@ void simulation(int time, int statisticTime) {
         //if (flag_to_rebuild_verlet) buildVerletList();
 
         ///itt allitani a moovie file-nak
-        if (t % 3000 == 0) {
+        if (t % 300 == 0) {
             calculateVertexTypes();
             calculateClusters();
             calculateVertexStatistics();
