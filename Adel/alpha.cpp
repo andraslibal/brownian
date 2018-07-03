@@ -313,6 +313,11 @@ void initData()
 				pinning_lattice_ay = stod(JSON.substr(t[y + 1].start, t[y + 1].end - t[y + 1].start));
 			else
 				pinning_lattice_ay = 2.0;
+
+			if ((x = getToken(1, r, "decimate_number")) >= 0)
+				decimate_number = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
+			else
+				decimate_number = pinning_lattice_Nx * pinning_lattice_Ny / 4;
 		}
 	} else {
 		pinning_lattice_Nx = 10;
@@ -324,6 +329,7 @@ void initData()
 	cout << "pinning_lattice_Ny: " << pinning_lattice_Ny << endl;
 	cout << "pinning_lattice_ax: " << pinning_lattice_ax << endl;
 	cout << "pinning_lattice_ay: " << pinning_lattice_ay << endl;
+	cout << "decimate_number: " << decimate_number << endl;
 
 	if ((x = getToken(1, r, "pinning_site")) >= 0) {
 		if (t[x+1].type == JSMN_OBJECT) {
@@ -364,11 +370,6 @@ void initData()
 	else
 		T = 3.0;
 
-	if ((x = getToken(1, r, "decimate_number")) >= 0)
-		decimate_number = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
-	else
-		decimate_number = pinning_lattice_Nx * pinning_lattice_Ny / 4;
-
 	if ((x = getToken(1, r, "N_tabulate")) >= 0)
 		N_tabulate = stoi(JSON.substr(t[x + 1].start, t[x + 1].end - t[x + 1].start));
 	else
@@ -399,7 +400,6 @@ void initData()
 	else
 		time_echo = 500;
 	cout << "T: " << T << endl;
-	cout << "decimate_number: " << decimate_number << endl;
 	cout << "N_tabulated: " << N_tabulate << endl;
 	cout << "r0: " << r0 << endl;
 	cout << "r_verlet: " << r_verlet << endl;

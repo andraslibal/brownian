@@ -83,6 +83,7 @@ void initParticles() {
     q = new double[N];
 
     moviefile = new char[30];
+    strcpy(moviefile, "first.mvi");
 
     Sx = 320.0;
     Sy = 320.0;
@@ -99,6 +100,7 @@ void freeData() {
     delete[] fy;
     delete[] color;
     delete[] q;
+    delete[] moviefile;
 }
 
 void generateCoordinates() {
@@ -285,8 +287,10 @@ int main(int argc, char* argv[]) {
         readDataFromFile(argv[1]);
     f = fopen(moviefile, "wb");
     generateCoordinates();
+    cout << "particles generated" << endl;
     start_timing();
-    for (int i = 0; i < 20000; i++) {
+    int time_echo = 100, total_time = 20000;
+    for (int i = 0; i < total_time; i++) {
         calculateForces();
         calculateExternalForces();
         moveParticles();
@@ -294,8 +298,11 @@ int main(int argc, char* argv[]) {
         if (i % 100 == 0)
             write_cmovie(f, i);
 
-        if (i % 10 == 0)
-            cout << i << "th iteration" << endl;
+        if (i % time_echo == 0)
+		{
+			double perc = (double) i / (double) total_time * 100;
+			cout << i << "/" << total_time << " " << perc << "%" << endl;
+		}
     }
     freeData();
     stop_timing();

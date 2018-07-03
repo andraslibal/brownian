@@ -11,3 +11,7 @@ qfx0 driving force in the x direction (simulating 50-50% going in opposite direc
 Movie output: creating a movie file with all x,y positions written out in each frame
 Statistics output: output the average speed of movement avg(qfx) to a statistics file
 avergaed over all particles and averaged over the time steps the average considers (ex.1000)  
+
+To run the simulation:
+- make
+- ./alpha.out config.json 
